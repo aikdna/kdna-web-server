@@ -1,0 +1,50 @@
+{
+  "name": "@aikdna/kdna-web-server",
+  "version": "0.1.0",
+  "description": "Server-side adapter for the KDNA runtime — typed route handlers for Next.js, Express, and Cloudflare Workers. All KDNA decryption and license verification runs server-side.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./nextjs": "./src/adapters/nextjs/index.js",
+    "./express": "./src/adapters/express/index.js",
+    "./cloudflare": "./src/adapters/cloudflare/index.js"
+  },
+  "files": [
+    "src/",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "lint": "eslint src/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "@aikdna/kdna-core": ">=0.7",
+    "@aikdna/kdna-studio-core": ">=0.1"
+  },
+  "peerDependenciesMeta": {
+    "@aikdna/kdna-studio-core": {
+      "optional": true
+    }
+  },
+  "dependencies": {},
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aikdna/kdna-web-server.git"
+  },
+  "homepage": "https://github.com/aikdna/kdna-web-server",
+  "keywords": [
+    "kdna",
+    "kdna-web-server",
+    "nextjs",
+    "express",
+    "cloudflare-workers",
+    "server-adapter",
+    "judgment-asset"
+  ]
+}
