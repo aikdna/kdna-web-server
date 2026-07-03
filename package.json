@@ -14,7 +14,8 @@
     "docs/",
     "LICENSE",
     "NOTICE",
-    "README.md"
+    "README.md",
+    "SECURITY.md"
   ],
   "scripts": {
     "ci": "npm test && npm run lint && npm pack --dry-run --json",
