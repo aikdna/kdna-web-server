@@ -139,6 +139,22 @@ function normalizeActivationBody(body = {}) {
   return normalized;
 }
 
+function redactLicenseKey(value, licenseKey) {
+  if (!licenseKey) return value;
+  if (typeof value === 'string') {
+    return value.split(licenseKey).join('[redacted-license-key]');
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => redactLicenseKey(entry, licenseKey));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, redactLicenseKey(entry, licenseKey)]),
+    );
+  }
+  return value;
+}
+
 function normalizeLoaded(result, options) {
   return {
     domain: result.asset_id || result.domain || null,
@@ -156,11 +172,12 @@ async function maybeProxyActivation(body, options = {}) {
       code: 'KDNA_ACTIVATION_NOT_CONFIGURED',
     });
   }
+  const activationBody = normalizeActivationBody(body);
   const endpoint = new URL(options.activationPath || DEFAULT_ACTIVATION_PATH, options.activationServerUrl);
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(normalizeActivationBody(body)),
+    body: JSON.stringify(activationBody),
   });
   const text = await response.text();
   let payload;
@@ -169,6 +186,7 @@ async function maybeProxyActivation(body, options = {}) {
   } catch {
     payload = { raw: text };
   }
+  payload = redactLicenseKey(payload, activationBody.license_key);
   return jsonResponse(payload, response.status);
 }
 

@@ -173,3 +173,45 @@ test('activation proxy defaults to the canonical entitlement endpoint', async ()
     });
   }
 });
+
+test('activation proxy redacts echoed license keys from upstream errors', async () => {
+  const key = 'KDNA-LIC-SECRET';
+  const activationServer = http.createServer((req, res) => {
+    req.resume();
+    req.on('end', () => {
+      res.writeHead(400, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        error: {
+          code: 'INVALID_LICENSE_KEY',
+          message: `license_key ${key} is invalid`,
+          echo: { license_key: key },
+        },
+      }));
+    });
+  });
+
+  await new Promise((resolve) => activationServer.listen(0, '127.0.0.1', resolve));
+  try {
+    const { port } = activationServer.address();
+    const server = createKDNAServer({
+      runtime: fakeRuntime(),
+      storage: createMemoryStorage(),
+      activationServerUrl: `http://127.0.0.1:${port}`,
+    });
+
+    const response = await server.handle(new Request('http://localhost/api/kdna/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ domain: '@author/asset-name', license_key: key }),
+    }));
+
+    assert.equal(response.status, 400);
+    const text = await response.text();
+    assert.doesNotMatch(text, new RegExp(key));
+    assert.match(text, /\[redacted-license-key\]/);
+  } finally {
+    await new Promise((resolve, reject) => {
+      activationServer.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
