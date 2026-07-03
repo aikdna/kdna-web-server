@@ -69,7 +69,8 @@ Do not set `storageDir` to a path served by a static file server.
 
 ## HTTPS requirement
 
-All credential fields (`password`, `licenseKey`, `entitlementToken`)
+All credential fields (`password`, `license_key` / `licenseKey`,
+`entitlementToken`)
 must travel over HTTPS. If you deploy behind a reverse proxy (nginx,
 Cloudflare, etc.), ensure TLS is terminated at or before your
 application boundary, not after.

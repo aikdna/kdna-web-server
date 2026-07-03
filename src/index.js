@@ -3,6 +3,7 @@ import { resolveRuntime } from './runtime.js';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const DEFAULT_ACTIVATION_PATH = '/v1/entitlements/activate';
 
 export class KDNAWebServerError extends Error {
   constructor(message, options = {}) {
@@ -125,6 +126,19 @@ function normalizeLoadOptions(body = {}) {
   return options;
 }
 
+function normalizeActivationBody(body = {}) {
+  const normalized = { ...body };
+  if (normalized.license_key == null && normalized.licenseKey != null) {
+    normalized.license_key = normalized.licenseKey;
+  }
+  if (normalized.machine_fingerprint == null && normalized.machineFingerprint != null) {
+    normalized.machine_fingerprint = normalized.machineFingerprint;
+  }
+  delete normalized.licenseKey;
+  delete normalized.machineFingerprint;
+  return normalized;
+}
+
 function normalizeLoaded(result, options) {
   return {
     domain: result.asset_id || result.domain || null,
@@ -142,11 +156,11 @@ async function maybeProxyActivation(body, options = {}) {
       code: 'KDNA_ACTIVATION_NOT_CONFIGURED',
     });
   }
-  const endpoint = new URL(options.activationPath || '/activate', options.activationServerUrl);
+  const endpoint = new URL(options.activationPath || DEFAULT_ACTIVATION_PATH, options.activationServerUrl);
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(normalizeActivationBody(body)),
   });
   const text = await response.text();
   let payload;

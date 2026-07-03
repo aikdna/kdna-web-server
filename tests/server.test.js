@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import http from 'node:http';
 import { createKDNAServer } from '../src/index.js';
 import { createMemoryStorage } from '../src/storage.js';
 import { createNextHandlers } from '../src/adapters/nextjs/index.js';
@@ -117,4 +118,58 @@ test('server rejects uploads larger than maxFileSizeBytes', async () => {
   assert.equal(response.status, 413);
   const body = await readJson(response);
   assert.equal(body.error.code, 'KDNA_FILE_TOO_LARGE');
+});
+
+test('activation proxy defaults to the canonical entitlement endpoint', async () => {
+  let captured = null;
+  const activationServer = http.createServer((req, res) => {
+    let body = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      captured = {
+        method: req.method,
+        url: req.url,
+        body: JSON.parse(body),
+      };
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ entitlementToken: 'signed-token' }));
+    });
+  });
+
+  await new Promise((resolve) => activationServer.listen(0, '127.0.0.1', resolve));
+  try {
+    const { port } = activationServer.address();
+    const server = createKDNAServer({
+      runtime: fakeRuntime(),
+      storage: createMemoryStorage(),
+      activationServerUrl: `http://127.0.0.1:${port}`,
+    });
+
+    const response = await server.handle(new Request('http://localhost/api/kdna/activate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        domain: '@author/asset-name',
+        licenseKey: 'KDNA-LIC-customer-1',
+        machineFingerprint: 'device-sha',
+      }),
+    }));
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await readJson(response), { entitlementToken: 'signed-token' });
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.url, '/v1/entitlements/activate');
+    assert.deepEqual(captured.body, {
+      domain: '@author/asset-name',
+      license_key: 'KDNA-LIC-customer-1',
+      machine_fingerprint: 'device-sha',
+    });
+  } finally {
+    await new Promise((resolve, reject) => {
+      activationServer.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
 });
