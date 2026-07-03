@@ -40,14 +40,15 @@ configuration option. It is a security requirement.
 
 ## Credential handling
 
-Passwords and license keys sent to `/load` or `/activate` are:
+Passwords sent to `/load`, license keys sent to `/activate`, and signed
+entitlements sent to `/load` are:
 
 1. Accepted over HTTPS only (enforce TLS in production).
 2. Scoped to the current request.
 3. Never written to disk, logs, or response bodies.
 
 There is no session storage of credentials. Each `/load` call requires
-the credential to be supplied again.
+the password or signed entitlement to be supplied again.
 
 ---
 

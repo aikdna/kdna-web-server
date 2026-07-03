@@ -167,7 +167,6 @@ needs to provide before `/load` will succeed.
   "fileId": "abc123",
   "context": {
     "hasPassword": false,
-    "hasLicenseKey": false,
     "entitlementToken": null
   }
 }
@@ -178,10 +177,11 @@ needs to provide before `/load` will succeed.
 ```json
 {
   "canProceed": false,
-  "missing": ["password"],
-  "requirements": {
-    "password": { "required": true, "hint": "Contact the asset author." },
-    "licenseKey": { "required": false }
+  "missing": ["enter_password"],
+  "plan": {
+    "state": "needs_password",
+    "required_action": "enter_password",
+    "can_load_now": false
   }
 }
 ```
@@ -192,9 +192,10 @@ needs to provide before `/load` will succeed.
 
 Decrypt and load a `.kdna` file. Returns the formatted payload.
 
-> **Security:** the `password` and `licenseKey` fields travel from
+> **Security:** `password` and signed entitlement fields travel from
 > the client to this endpoint over HTTPS and are used for the single
-> in-flight decryption. They are not logged, stored, or returned.
+> in-flight authorization/load. They are not logged, stored, or returned.
+> Raw license keys belong on `/activate`, not `/load`.
 
 **Request** (`application/json`)
 
@@ -203,8 +204,7 @@ Decrypt and load a `.kdna` file. Returns the formatted payload.
   "fileId": "abc123",
   "profile": "compact",
   "password": "...",
-  "licenseKey": "...",
-  "entitlementToken": "..."
+  "entitlementToken": { "status": "active" }
 }
 ```
 
@@ -288,8 +288,9 @@ browser is allowed to see.
 - The browser never receives encrypted payload bytes or decryption keys.
 - `/load` returns formatted content only after the server-side runtime
   authorizes and loads the asset.
-- Passwords and license keys are single-use: they travel to `/load` or
-  `/activate` over HTTPS and are not returned in responses.
+- Passwords and signed entitlements are single-use on `/load`; license keys
+  travel only to `/activate`. Credentials must use HTTPS and are not returned
+  in responses.
 - `/validate` and `/inspect` operate on public metadata only.
 - `/plan-load` tells the client what is required but reveals no secrets.
 
