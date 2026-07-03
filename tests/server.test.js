@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import http from 'node:http';
 import { createKDNAServer } from '../src/index.js';
 import { createMemoryStorage } from '../src/storage.js';
@@ -214,4 +215,9 @@ test('activation proxy redacts echoed license keys from upstream errors', async 
       activationServer.close((error) => (error ? reject(error) : resolve()));
     });
   }
+});
+
+test('package peers pin the Core v1 runtime API range', () => {
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '^0.15.10');
 });

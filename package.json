@@ -25,7 +25,7 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "@aikdna/kdna-core": ">=0.7"
+    "@aikdna/kdna-core": "^0.15.10"
   },
   "dependencies": {},
   "license": "Apache-2.0",
