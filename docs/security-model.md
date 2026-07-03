@@ -14,7 +14,7 @@ Browser                         Server (this package)
 File bytes        ──upload──▶   Temporary storage
 File metadata     ◀─inspect──   Inspect (no decrypt)
 Load-plan state   ◀─plan-load── Evaluate requirements
-Password (HTTPS)  ──load──────▶ Decrypt → format → return content
+Password (HTTPS)  ──load──────▶ Authorize → decrypt → format content
 License key       ──activate──▶ Proxy to activation server
                   ◀─────────── Signed entitlement record
 ```
@@ -40,15 +40,15 @@ configuration option. It is a security requirement.
 
 ## Credential handling
 
-Passwords and license keys sent to `/load` or `/export` are:
+Passwords sent to `/load`, license keys sent to `/activate`, and signed
+entitlements sent to `/load` are:
 
 1. Accepted over HTTPS only (enforce TLS in production).
-2. Used for exactly one decryption call.
+2. Scoped to the current request.
 3. Never written to disk, logs, or response bodies.
-4. Cleared from memory after the request completes.
 
 There is no session storage of credentials. Each `/load` call requires
-the credential to be supplied again.
+the password or signed entitlement to be supplied again.
 
 ---
 
@@ -58,7 +58,8 @@ Uploaded `.kdna` files are stored in `storageDir` for the duration of
 the request or a configurable TTL. Files are:
 
 - Identified by a server-generated ID, not the original filename.
-- Validated before any operation (`kdna validate` equivalent).
+- Validated when `/validate` is called. `inspect`, `plan-load`, and
+  `load` delegate format checks to the configured KDNA runtime.
 - Not accessible by URL — only via the `/inspect`, `/plan-load`, and
   `/load` endpoints with the correct `fileId`.
 - Automatically cleaned up after TTL expiry (default: 1 hour).
@@ -69,7 +70,8 @@ Do not set `storageDir` to a path served by a static file server.
 
 ## HTTPS requirement
 
-All credential fields (`password`, `licenseKey`, `entitlementToken`)
+All credential fields (`password`, `license_key` / `licenseKey`,
+`entitlementToken`)
 must travel over HTTPS. If you deploy behind a reverse proxy (nginx,
 Cloudflare, etc.), ensure TLS is terminated at or before your
 application boundary, not after.

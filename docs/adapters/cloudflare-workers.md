@@ -11,7 +11,7 @@ compatible with the Cloudflare Workers fetch API.
 import { createKDNAWorkerRouter } from '@aikdna/kdna-web-server/cloudflare'
 
 const router = createKDNAWorkerRouter({
-  storageBucket: null,   // see storage section below
+  storage: customStorage,
   activationServerUrl: null,
 })
 
@@ -30,26 +30,23 @@ export default {
 
 ## Storage
 
-Cloudflare Workers do not have a local filesystem. Configure an R2
-bucket for temporary file storage:
+Cloudflare Workers do not have a local filesystem. The MVP adapter uses
+in-memory storage by default, which is useful for local smoke tests but
+is not durable across isolate restarts. Production Workers should pass a
+custom storage adapter:
 
 ```js
 const router = createKDNAWorkerRouter({
-  storageBucket: env.KDNA_BUCKET,   // R2 binding
+  storage: {
+    async put(file) { /* write bytes to R2 or another private store */ },
+    async get(fileId) { /* return stored metadata for the runtime */ },
+    async remove(fileId) {},
+    async cleanup() {},
+  },
 })
 ```
 
-Bind the bucket in `wrangler.toml`:
-
-```toml
-[[r2_buckets]]
-binding = "KDNA_BUCKET"
-bucket_name = "my-kdna-files"
-```
-
-Files stored in R2 are keyed by a server-generated ID and are not
-publicly accessible unless you create a public bucket policy. Do not
-create a public policy on this bucket.
+Do not expose the storage bucket or object keys publicly.
 
 ---
 
@@ -65,7 +62,7 @@ Reference them in the router:
 
 ```js
 const router = createKDNAWorkerRouter({
-  storageBucket: env.KDNA_BUCKET,
+  storage: customStorage,
   activationServerUrl: env.KDNA_ACTIVATION_URL,
 })
 ```
@@ -74,9 +71,9 @@ const router = createKDNAWorkerRouter({
 
 ## Limitations
 
-- The Cloudflare Workers runtime does not support all Node.js APIs.
-  `@aikdna/kdna-web-server/cloudflare` uses the Web Crypto API for
-  all cryptographic operations.
+- The default KDNA core runtime may require APIs that are not available
+  in Workers. Pass a Worker-compatible `runtime` option before treating
+  this adapter as production-ready on Cloudflare.
 - `@aikdna/kdna-studio-core` (Studio export) uses Node.js APIs and is
   not compatible with the Workers runtime. The `/export` endpoint is
   not available in this adapter.
