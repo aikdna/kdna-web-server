@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 import { createKDNAServer } from '../src/index.js';
+import { loadDefaultRuntime } from '../src/runtime.js';
 import { createMemoryStorage } from '../src/storage.js';
 import { createNextHandlers } from '../src/adapters/nextjs/index.js';
 import { createKDNAWorkerRouter } from '../src/adapters/cloudflare/index.js';
@@ -220,4 +221,11 @@ test('activation proxy redacts echoed license keys from upstream errors', async 
 test('package peers pin the Core v1 runtime API range', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '^0.15.10');
+});
+
+test('default runtime resolves the Core v1 API surface', async () => {
+  const runtime = await loadDefaultRuntime();
+  for (const name of ['validate', 'inspect', 'planLoad', 'loadAuthorized']) {
+    assert.equal(typeof runtime[name], 'function', `expected runtime.${name}`);
+  }
 });
