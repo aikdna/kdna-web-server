@@ -37,6 +37,9 @@
     "type": "git",
     "url": "https://github.com/aikdna/kdna-web-server.git"
   },
+  "bugs": {
+    "url": "https://github.com/aikdna/kdna-web-server/issues"
+  },
   "homepage": "https://github.com/aikdna/kdna-web-server",
   "keywords": [
     "kdna",
