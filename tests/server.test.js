@@ -46,6 +46,12 @@ function multipartRequest(operation) {
   return new Request(`http://localhost/api/kdna/${operation}`, { method: 'POST', body: form });
 }
 
+function multipartRequestWithBytes(operation, bytes) {
+  const form = new FormData();
+  form.set('file', new Blob([bytes], { type: 'application/octet-stream' }), 'asset.kdna');
+  return new Request(`http://localhost/api/kdna/${operation}`, { method: 'POST', body: form });
+}
+
 async function readJson(response) {
   return JSON.parse(await response.text());
 }
@@ -99,4 +105,16 @@ test('unknown fileId returns a structured 404', async () => {
   assert.equal(response.status, 404);
   const body = await readJson(response);
   assert.equal(body.error.code, 'KDNA_FILE_NOT_FOUND');
+});
+
+test('server rejects uploads larger than maxFileSizeBytes', async () => {
+  const server = createKDNAServer({
+    runtime: fakeRuntime(),
+    storage: createMemoryStorage(),
+    maxFileSizeBytes: 4,
+  });
+  const response = await server.handle(multipartRequestWithBytes('inspect', 'too large'));
+  assert.equal(response.status, 413);
+  const body = await readJson(response);
+  assert.equal(body.error.code, 'KDNA_FILE_TOO_LARGE');
 });

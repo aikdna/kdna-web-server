@@ -21,11 +21,7 @@ Workers — see the adapter guides linked at the end.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-If you also need asset creation (Studio export):
-
-```bash
-npm install @aikdna/kdna-studio-core
-```
+Studio export is not included in the server MVP yet.
 
 ---
 
@@ -54,8 +50,6 @@ KDNA_STORAGE_DIR=/tmp/kdna
 # Only needed if you use licensed-mode assets:
 KDNA_ACTIVATION_URL=https://your-activation-server.example.com
 
-# Only needed if you use remote-mode assets:
-KDNA_REMOTE_URL=https://your-remote-server.example.com
 ```
 
 ---

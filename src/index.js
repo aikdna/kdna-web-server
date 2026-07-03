@@ -2,6 +2,7 @@ import { createFileStorage } from './storage.js';
 import { resolveRuntime } from './runtime.js';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
+const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export class KDNAWebServerError extends Error {
   constructor(message, options = {}) {
@@ -49,7 +50,7 @@ async function parseJson(request) {
   }
 }
 
-async function readUploadedFile(request) {
+async function readUploadedFile(request, options = {}) {
   let form;
   try {
     form = await request.formData();
@@ -66,6 +67,13 @@ async function readUploadedFile(request) {
     throw new KDNAWebServerError('Missing multipart field: file.', {
       status: 400,
       code: 'KDNA_FILE_REQUIRED',
+    });
+  }
+  const maxFileSizeBytes = options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
+  if (Number.isFinite(maxFileSizeBytes) && file.size > maxFileSizeBytes) {
+    throw new KDNAWebServerError(`KDNA file exceeds maxFileSizeBytes (${maxFileSizeBytes}).`, {
+      status: 413,
+      code: 'KDNA_FILE_TOO_LARGE',
     });
   }
   return file;
@@ -169,7 +177,7 @@ export function createKDNAServer(options = {}) {
         }
 
         if (operation === 'validate') {
-          const file = await readUploadedFile(request);
+          const file = await readUploadedFile(request, options);
           const stored = await storage.put(file);
           const result = runtime.validate(stored.path);
           const inspected = runtime.inspect ? runtime.inspect(stored.path) : null;
@@ -177,7 +185,7 @@ export function createKDNAServer(options = {}) {
         }
 
         if (operation === 'inspect') {
-          const file = await readUploadedFile(request);
+          const file = await readUploadedFile(request, options);
           const stored = await storage.put(file);
           const inspected = runtime.inspect(stored.path);
           const plan = runtime.planLoad ? runtime.planLoad(stored.path) : null;

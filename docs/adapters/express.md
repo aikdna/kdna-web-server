@@ -38,29 +38,6 @@ application layer.
 
 ---
 
-## Mounting individual handlers
-
-```js
-import express from 'express'
-import { validateHandler, loadHandler } from '@aikdna/kdna-web-server/express'
-
-const app = express()
-
-const opts = { storageDir: '/tmp/kdna' }
-app.post('/api/kdna/validate', validateHandler(opts))
-app.post('/api/kdna/load',     loadHandler(opts))
-```
-
----
-
-## CommonJS
-
-```js
-const { createKDNARouter } = require('@aikdna/kdna-web-server/express')
-```
-
----
-
 ## Deployment notes
 
 - Set `storageDir` to a path that is **not** served as a static
@@ -69,3 +46,5 @@ const { createKDNARouter } = require('@aikdna/kdna-web-server/express')
   filesystem if you want file IDs to resolve across processes.
   Alternatively, use a sticky session or a shared object storage
   adapter (see [configuration options](../../README.md#configuration)).
+- This package is ESM-first. Use `import` syntax or load it from
+  CommonJS with dynamic `import()`.

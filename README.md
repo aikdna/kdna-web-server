@@ -3,8 +3,8 @@
 **Server-side adapter for the KDNA runtime.**
 
 Mount one function call and your Next.js, Express, or Cloudflare Workers
-app gains a complete KDNA API: validate, inspect, plan-load, load,
-export, and activate.
+app gains an MVP KDNA API: validate, inspect, plan-load, load, and
+activation proxying. Studio export is not included in this server MVP yet.
 
 > **Security invariant:** decryption, license verification, and
 > entitlement checks run exclusively server-side. Passwords and
@@ -29,8 +29,8 @@ export, and activate.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-`@aikdna/kdna-studio-core` is optional — only needed if you expose the
-`/export` endpoint for asset creation.
+Studio export is planned for a later server milestone. The MVP returns
+a structured `501 KDNA_EXPORT_NOT_IMPLEMENTED` response for `/export`.
 
 ---
 
@@ -45,7 +45,6 @@ import { createNextHandlers } from '@aikdna/kdna-web-server/nextjs'
 const { GET, POST } = createNextHandlers({
   storageDir: process.env.KDNA_STORAGE_DIR ?? './kdna-files',
   activationServerUrl: process.env.KDNA_ACTIVATION_URL,    // optional
-  remoteServerUrl:     process.env.KDNA_REMOTE_URL,        // optional
 })
 
 export { GET, POST }
@@ -59,8 +58,8 @@ That single route file registers:
 | `POST` | `/api/kdna/inspect` | Return manifest and load-plan metadata |
 | `POST` | `/api/kdna/plan-load` | Evaluate the LoadPlan and return requirements |
 | `POST` | `/api/kdna/load` | Decrypt and return the formatted payload |
-| `POST` | `/api/kdna/export` | Compile and export a new `.kdna` file |
 | `POST` | `/api/kdna/activate` | Proxy an entitlement activation request |
+| `POST` | `/api/kdna/export` | Not implemented in the MVP; returns `501` |
 
 → [Full Next.js guide](./docs/adapters/nextjs.md)
 
@@ -85,7 +84,7 @@ app.listen(3000)
 import { createKDNAWorkerRouter } from '@aikdna/kdna-web-server/cloudflare'
 
 const router = createKDNAWorkerRouter({
-  storageBucket: env.KDNA_BUCKET,
+  storage: customStorage,
 })
 
 export default {
@@ -227,18 +226,18 @@ requires.
 
 ### `POST /export`
 
-Compile a Studio project and export a `.kdna` file.
-Requires `@aikdna/kdna-studio-core` to be installed.
+Studio export is not implemented in the server MVP yet.
 
-**Request** (`multipart/form-data`)
+**Response** — `501 application/json`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `project` | File | A `.zip` of the Studio project directory |
-| `encryptionMode` | string | `none`, `password`, or `licensed` |
-| `password` | string | Required when `encryptionMode` is `password` |
-
-**Response** — `application/octet-stream`, the compiled `.kdna` file.
+```json
+{
+  "error": {
+    "code": "KDNA_EXPORT_NOT_IMPLEMENTED",
+    "message": "KDNA export is not included in the server MVP yet."
+  }
+}
+```
 
 ---
 
@@ -265,11 +264,12 @@ server. Returns the signed entitlement record.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `storageDir` | `string` | required | Directory where uploaded `.kdna` files are stored temporarily. |
+| `storageDir` | `string` | OS temp dir | Directory where uploaded `.kdna` files are stored temporarily by the default Node storage adapter. |
+| `storage` | `object` | file storage | Custom storage adapter with `put`, `get`, `remove`, and `cleanup` methods. |
+| `ttlMs` | `number` | `3600000` | Upload TTL for the default file storage adapter. |
 | `maxFileSizeBytes` | `number` | `10485760` | Maximum accepted file size (10 MB). |
 | `activationServerUrl` | `string` | `undefined` | URL of a `@aikdna/kdna-activation-server` instance. Required to use `/activate`. |
-| `remoteServerUrl` | `string` | `undefined` | URL of a `@aikdna/kdna-remote-server` instance. Required for remote-mode assets. |
-| `allowedOrigins` | `string[]` | `[]` | CORS allowed origins. Empty array disables CORS headers. |
+| `activationPath` | `string` | `/activate` | Path used when proxying activation requests. |
 
 ---
 
@@ -281,10 +281,11 @@ browser is allowed to see.
 
 **Short version:**
 
-- The browser never receives a decrypted payload.
+- The browser never receives encrypted payload bytes or decryption keys.
+- `/load` returns formatted content only after the server-side runtime
+  authorizes and loads the asset.
 - Passwords and license keys are single-use: they travel to `/load` or
-  `/export` over HTTPS, are used for one decryption call, and are not
-  stored.
+  `/activate` over HTTPS and are not returned in responses.
 - `/validate` and `/inspect` operate on public metadata only.
 - `/plan-load` tells the client what is required but reveals no secrets.
 
@@ -295,7 +296,7 @@ browser is allowed to see.
 | Package | Role |
 |---------|------|
 | [`@aikdna/kdna-core`](https://github.com/aikdna/kdna) | KDNA format, schemas, and runtime loading contract |
-| [`@aikdna/kdna-studio-core`](https://github.com/aikdna/kdna-studio-core) | Studio authoring kernel — compile and export `.kdna` |
+| [`@aikdna/kdna-studio-core`](https://github.com/aikdna/kdna-studio-core) | Studio authoring kernel; server-side export integration is planned after the MVP |
 | [`@aikdna/kdna-activation-server`](https://github.com/aikdna/kdna-activation-server) | Self-hosted license activation server |
 | [`@aikdna/kdna-remote-server`](https://github.com/aikdna/kdna-remote-server) | Self-hosted remote projection server |
 | [`@aikdna/kdna-web-client`](https://github.com/aikdna/kdna-web-client) | Browser-side file picking, upload, and load-plan state |
