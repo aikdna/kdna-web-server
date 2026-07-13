@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-07-13)
 
 - Map password/decryption failures to a generic 401 response and authorization
   denial to a generic 403 response.
 - Prevent provider error bodies, crypto details, local paths, and stack
   information from crossing the public HTTP boundary.
 - Document and test the actual Runtime Capsule response shape.
+- Align the adapter peer and test runtime with KDNA Core 0.16.0.
 
 ## 0.2.0 (2026-07-13)
 
