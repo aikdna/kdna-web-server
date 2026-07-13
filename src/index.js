@@ -20,13 +20,42 @@ function jsonResponse(body, status = 200) {
 }
 
 function errorResponse(error) {
-  const status = error.status || 500;
+  if (error instanceof KDNAWebServerError) {
+    return jsonResponse({
+      error: { code: error.code, message: error.message },
+    }, error.status);
+  }
+
+  if (error?.code === 'KDNA_DECRYPT_FAILED') {
+    return jsonResponse({
+      error: {
+        code: 'KDNA_DECRYPT_FAILED',
+        message: 'Unable to decrypt asset with the provided credentials.',
+      },
+    }, 401);
+  }
+
+  if (error?.code === 'KDNA_LOAD_NOT_AUTHORIZED' || error?.plan?.can_load_now === false) {
+    return jsonResponse({
+      error: {
+        code: error.code || 'KDNA_LOAD_NOT_AUTHORIZED',
+        message: 'The asset LoadPlan did not authorize this load.',
+      },
+    }, 403);
+  }
+
+  if (error?.code === 'KDNA_FILE_NOT_FOUND' || error?.code === 'KDNA_FILE_EXPIRED') {
+    return jsonResponse({
+      error: { code: error.code, message: error.message },
+    }, error.code === 'KDNA_FILE_EXPIRED' ? 410 : 404);
+  }
+
   return jsonResponse({
     error: {
-      code: error.code || (status >= 500 ? 'KDNA_INTERNAL_ERROR' : 'KDNA_BAD_REQUEST'),
-      message: error.message || 'KDNA request failed.',
+      code: 'KDNA_INTERNAL_ERROR',
+      message: 'KDNA request failed.',
     },
-  }, status);
+  }, 500);
 }
 
 function normalizeOperation(request, options = {}) {

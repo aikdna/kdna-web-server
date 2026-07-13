@@ -30,7 +30,7 @@ configuration option. It is a security requirement.
 |------|---------|--------|
 | Domain, version, title, description | Yes | Public manifest fields |
 | LoadPlan requirements (what is needed) | Yes | Drives UI state |
-| Formatted payload content (after load) | Yes | The purpose of `/load` |
+| Runtime Capsule context (after load) | Yes | The purpose of `/load` |
 | Encrypted payload bytes | No | Decryption must be server-side |
 | Decryption keys or derived key material | Never | Would defeat encryption |
 | Passwords or license keys (echoed back) | Never | Single-use credentials |
@@ -46,6 +46,10 @@ entitlements sent to `/load` are:
 1. Accepted over HTTPS only (enforce TLS in production).
 2. Scoped to the current request.
 3. Never written to disk, logs, or response bodies.
+
+Wrong credentials receive a generic `KDNA_DECRYPT_FAILED` response. Provider
+error bodies, cryptographic implementation details, and internal paths are not
+part of the public HTTP error contract.
 
 There is no session storage of credentials. Each `/load` call requires
 the password or signed entitlement to be supplied again.

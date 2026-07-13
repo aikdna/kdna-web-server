@@ -122,6 +122,44 @@ test('unknown fileId returns a structured 404', async () => {
   assert.equal(body.error.code, 'KDNA_FILE_NOT_FOUND');
 });
 
+test('load maps decryption failures to a generic 401 without crypto details', async () => {
+  const runtime = fakeRuntime();
+  runtime.loadAuthorized = () => {
+    const error = new Error('AES-256-KW unwrap: integrity check failed for secret material');
+    error.code = 'KDNA_DECRYPT_FAILED';
+    throw error;
+  };
+  const server = createKDNAServer({ runtime, storage: createMemoryStorage() });
+  const inspected = await readJson(await server.handle(multipartRequest('inspect')));
+  const response = await server.handle(new Request('http://localhost/api/kdna/load', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ fileId: inspected.fileId, password: 'wrong' }),
+  }));
+  assert.equal(response.status, 401);
+  const text = await response.text();
+  assert.doesNotMatch(text, /AES|unwrap|integrity check|secret material/i);
+  assert.equal(JSON.parse(text).error.code, 'KDNA_DECRYPT_FAILED');
+});
+
+test('unexpected runtime errors do not expose internal messages', async () => {
+  const runtime = fakeRuntime();
+  runtime.loadAuthorized = () => {
+    throw new Error('/private/path/provider-error-body');
+  };
+  const server = createKDNAServer({ runtime, storage: createMemoryStorage() });
+  const inspected = await readJson(await server.handle(multipartRequest('inspect')));
+  const response = await server.handle(new Request('http://localhost/api/kdna/load', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ fileId: inspected.fileId }),
+  }));
+  assert.equal(response.status, 500);
+  const text = await response.text();
+  assert.doesNotMatch(text, /private\/path|provider-error-body/);
+  assert.equal(JSON.parse(text).error.code, 'KDNA_INTERNAL_ERROR');
+});
+
 test('server rejects uploads larger than maxFileSizeBytes', async () => {
   const server = createKDNAServer({
     runtime: fakeRuntime(),

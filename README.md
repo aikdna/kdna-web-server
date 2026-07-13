@@ -65,7 +65,7 @@ That single route file registers:
 | `POST` | `/api/kdna/validate` | Validate a `.kdna` file |
 | `POST` | `/api/kdna/inspect` | Return manifest and load-plan metadata |
 | `POST` | `/api/kdna/plan-load` | Evaluate the LoadPlan and return requirements |
-| `POST` | `/api/kdna/load` | Decrypt and return the formatted payload |
+| `POST` | `/api/kdna/load` | Authorize and return a JSON Runtime Capsule |
 | `POST` | `/api/kdna/activate` | Proxy an entitlement activation request |
 | `POST` | `/api/kdna/export` | Not implemented in the MVP; returns `501` |
 
@@ -198,7 +198,8 @@ needs to provide before `/load` will succeed.
 
 ### `POST /load`
 
-Decrypt and load a `.kdna` file. Returns the formatted payload.
+Authorize and load a `.kdna` file. Returns the selected Runtime Capsule plus
+`content` as a convenience alias for the Capsule context.
 
 > **Security:** `password` and signed entitlement fields travel from
 > the client to this endpoint over HTTPS and are used for the single
@@ -226,9 +227,24 @@ requires.
   "domain": "@author/asset-name",
   "version": "1.2.0",
   "profile": "compact",
-  "content": "... formatted judgment payload ..."
+  "content": {
+    "highest_question": "What should guide this task?",
+    "axioms": []
+  },
+  "capsule": {
+    "type": "kdna.context.capsule",
+    "version": "1.0",
+    "profile": "compact",
+    "context": {
+      "highest_question": "What should guide this task?",
+      "axioms": []
+    }
+  }
 }
 ```
+
+Wrong decryption credentials return `401 KDNA_DECRYPT_FAILED` with a generic
+message. Cryptographic provider errors and internal paths are never returned.
 
 ---
 
@@ -294,7 +310,7 @@ browser is allowed to see.
 **Short version:**
 
 - The browser never receives encrypted payload bytes or decryption keys.
-- `/load` returns formatted content only after the server-side runtime
+- `/load` returns a Runtime Capsule only after the server-side runtime
   authorizes and loads the asset.
 - Passwords and signed entitlements are single-use on `/load`; license keys
   travel only to `/activate`. Credentials must use HTTPS and are not returned
