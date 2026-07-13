@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 (2026-07-13)
+
+- Correct the published installation documentation to require KDNA Core
+  0.16.0, matching the package peer dependency and tested runtime.
+
 ## 0.2.1 (2026-07-13)
 
 - Map password/decryption failures to a generic 401 response and authorization
