@@ -29,7 +29,7 @@ activation proxying. Studio export is not included in this server MVP yet.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-The server MVP expects `@aikdna/kdna-core@0.15.12`, matching the
+The server MVP expects `@aikdna/kdna-core@0.16.0`, matching the
 KDNA runtime APIs used for `inspect`, `validate`, `plan-load`, and
 `load`.
 
