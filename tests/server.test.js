@@ -270,7 +270,7 @@ test('activation proxy redacts echoed license keys from upstream errors', async 
 
 test('package peers pin the current KDNA runtime API', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '0.15.12');
+  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '0.16.0');
 });
 
 test('default runtime resolves the current KDNA API surface', async () => {
