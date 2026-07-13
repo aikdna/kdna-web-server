@@ -4,7 +4,7 @@ export async function loadDefaultRuntime() {
   if (cachedRuntime) return cachedRuntime;
 
   try {
-    const mod = await import('@aikdna/kdna-core/v1');
+    const mod = await import('@aikdna/kdna-core');
     cachedRuntime = mod.default && Object.keys(mod.default).length > 0
       ? { ...mod.default, ...mod }
       : mod;

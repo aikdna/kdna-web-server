@@ -33,6 +33,17 @@ function fakeRuntime() {
     },
     loadAuthorized(input, options = {}) {
       assert.ok(input);
+      if (options.as === 'json') {
+        return {
+          type: 'kdna.context.capsule',
+          version: '1.0',
+          domain: 'kdna:test:web',
+          judgment_version: '0.1.0',
+          profile: options.profile,
+          context: { highest_question: 'What should the server load?' },
+          trace: { payload_encoding: 'cbor' },
+        };
+      }
       return {
         asset_id: 'kdna:test:web',
         version: '0.1.0',
@@ -83,8 +94,9 @@ test('server validates, inspects, plans, and loads an uploaded asset', async () 
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ fileId: inspect.fileId, profile: 'compact' }),
   })));
-  assert.equal(loaded.content, 'loaded prompt');
+  assert.equal(loaded.content.highest_question, 'What should the server load?');
   assert.equal(loaded.profile, 'compact');
+  assert.equal(loaded.capsule.type, 'kdna.context.capsule');
 });
 
 test('next and worker adapters expose reusable handlers', async () => {
@@ -218,12 +230,12 @@ test('activation proxy redacts echoed license keys from upstream errors', async 
   }
 });
 
-test('package peers pin the Core v1 runtime API range', () => {
+test('package peers pin the current KDNA runtime API', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '^0.15.10');
+  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '0.15.12');
 });
 
-test('default runtime resolves the Core v1 API surface', async () => {
+test('default runtime resolves the current KDNA API surface', async () => {
   const runtime = await loadDefaultRuntime();
   for (const name of ['validate', 'inspect', 'planLoad', 'loadAuthorized']) {
     assert.equal(typeof runtime[name], 'function', `expected runtime.${name}`);

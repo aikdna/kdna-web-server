@@ -118,7 +118,7 @@ function normalizePlanContext(context = {}) {
 function normalizeLoadOptions(body = {}) {
   const options = {
     profile: body.profile || 'compact',
-    as: body.as || 'prompt',
+    as: body.as || 'json',
   };
   if (body.password) options.password = body.password;
   if (body.entitlement) options.entitlement = body.entitlement;
@@ -156,6 +156,15 @@ function redactLicenseKey(value, licenseKey) {
 }
 
 function normalizeLoaded(result, options) {
+  if (result?.type === 'kdna.context.capsule') {
+    return {
+      domain: result.domain || null,
+      version: result.judgment_version || null,
+      profile: result.profile || options.profile || 'compact',
+      content: result.context || {},
+      capsule: result,
+    };
+  }
   return {
     domain: result.asset_id || result.domain || null,
     version: result.version || null,

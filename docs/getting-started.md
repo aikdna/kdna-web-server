@@ -21,8 +21,8 @@ Workers — see the adapter guides linked at the end.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-Use `@aikdna/kdna-core@^0.15.10` with this server MVP. Earlier Core
-versions do not expose the complete v1 runtime surface used by the
+Use `@aikdna/kdna-core@0.15.12` with this server MVP. Earlier Core
+versions do not expose the complete current runtime surface used by the
 adapter.
 
 Studio export is not included in the server MVP yet.
