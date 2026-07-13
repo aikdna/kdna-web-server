@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Map password/decryption failures to a generic 401 response and authorization
+  denial to a generic 403 response.
+- Prevent provider error bodies, crypto details, local paths, and stack
+  information from crossing the public HTTP boundary.
+- Document and test the actual Runtime Capsule response shape.
+
 ## 0.2.0 (2026-07-13)
 
 - Load the current KDNA Core package root instead of the removed versioned subpath.
