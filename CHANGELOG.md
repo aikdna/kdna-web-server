@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 (2026-07-13)
+
+- Load the current KDNA Core package root instead of the removed versioned subpath.
+- Pin Core 0.15.12 and default load responses to Runtime Capsules.
+- Keep validation, authorization, decryption, and profile selection inside Core.
+- Normalize Capsule responses across Next.js, Express, and Cloudflare Workers.
+
 ## 0.1.1 (2026-07-03)
 
 - Load the default runtime from `@aikdna/kdna-core/v1` so published
