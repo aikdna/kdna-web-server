@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Pin the tested KDNA Core compatibility declaration to 0.17.0.
+- Exercise the unreleased Core 0.17.0 candidate package in CI before the Core
+  release, avoiding a registry dependency cycle.
+- Run the real server adapter against a public KDNA asset through validation,
+  inspection, load planning, and Runtime Capsule loading.
+
 ## 0.2.2 (2026-07-13)
 
 - Correct the published installation documentation to require KDNA Core

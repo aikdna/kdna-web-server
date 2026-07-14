@@ -29,9 +29,9 @@ activation proxying. Studio export is not included in this server MVP yet.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-The server MVP expects `@aikdna/kdna-core@0.16.0`, matching the
-KDNA runtime APIs used for `inspect`, `validate`, `plan-load`, and
-`load`.
+The server MVP expects `@aikdna/kdna-core@0.17.0`, matching the KDNA runtime
+APIs used for `inspect`, `validate`, `plan-load`, and `load`. Other Core
+versions are intentionally outside this release's tested peer range.
 
 The load endpoint defaults to Core's JSON Runtime Capsule. The server stores
 the uploaded `.kdna` file but does not decode `payload.kdnab` itself; all
