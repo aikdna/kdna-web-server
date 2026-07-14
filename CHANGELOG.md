@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.3 (2026-07-14)
 
 - Pin the tested KDNA Core compatibility declaration to 0.17.0.
 - Install the exact Core 0.17.0 registry package in CI and keep the development
