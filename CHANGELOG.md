@@ -3,8 +3,8 @@
 ## Unreleased
 
 - Pin the tested KDNA Core compatibility declaration to 0.17.0.
-- Exercise the unreleased Core 0.17.0 candidate package in CI before the Core
-  release, avoiding a registry dependency cycle.
+- Install the exact Core 0.17.0 registry package in CI and keep the development
+  lockfile on the same version.
 - Run the real server adapter against a public KDNA asset through validation,
   inspection, load planning, and Runtime Capsule loading.
 

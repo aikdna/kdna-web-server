@@ -18,26 +18,16 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
         with:
-          repository: aikdna/kdna
-          ref: a9372feb13575214abe3774745c6e28f21b13e25
-          path: core-candidate
-      - uses: actions/checkout@v7
-        with:
           repository: aikdna/kdna-assets
           ref: 931033e56be1c59457958da701b71a2da775021e
           path: public-assets
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
-      - name: Pack KDNA Core 0.17.0 candidate
-        run: npm pack ./core-candidate/packages/kdna-core --pack-destination /tmp
-      - name: Install dependencies with the Core candidate
-        run: |
-          npm ci --legacy-peer-deps
-          npm install --no-save --package-lock=false --legacy-peer-deps /tmp/aikdna-kdna-core-0.17.0.tgz
+      - run: npm ci
       - run: npm run lint
       - run: npm test
-      - name: Exercise the real Core adapter path
+      - name: Exercise the real Core 0.17.0 adapter path
         env:
           KDNA_WEB_CORE_ASSET: public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.0.kdna
         run: npm run test:core-compat
