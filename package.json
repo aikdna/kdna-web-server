@@ -1,6 +1,6 @@
 {
   "name": "@aikdna/kdna-web-server",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Server-side adapter for the KDNA runtime — route handlers for Next.js, Express, and Cloudflare Workers. All KDNA decryption and license verification runs server-side.",
   "type": "module",
   "exports": {

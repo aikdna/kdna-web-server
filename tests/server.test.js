@@ -181,6 +181,11 @@ test('activation proxy defaults to the canonical entitlement endpoint', async ()
       body += chunk;
     });
     req.on('end', () => {
+      if (req.method !== 'POST' || req.url !== '/entitlements/activate') {
+        res.writeHead(404, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: { code: 'NOT_FOUND' } }));
+        return;
+      }
       captured = {
         method: req.method,
         url: req.url,
@@ -213,7 +218,7 @@ test('activation proxy defaults to the canonical entitlement endpoint', async ()
     assert.equal(response.status, 200);
     assert.deepEqual(await readJson(response), { entitlementToken: 'signed-token' });
     assert.equal(captured.method, 'POST');
-    assert.equal(captured.url, '/v1/entitlements/activate');
+    assert.equal(captured.url, '/entitlements/activate');
     assert.deepEqual(captured.body, {
       domain: '@author/asset-name',
       license_key: 'KDNA-LIC-customer-1',

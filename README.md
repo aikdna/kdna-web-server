@@ -297,7 +297,7 @@ server as `license_key` and `machine_fingerprint`.
 | `ttlMs` | `number` | `3600000` | Upload TTL for the default file storage adapter. |
 | `maxFileSizeBytes` | `number` | `10485760` | Maximum accepted file size (10 MB). |
 | `activationServerUrl` | `string` | `undefined` | URL of a `@aikdna/kdna-activation-server` instance. Required to use `/activate`. |
-| `activationPath` | `string` | `/v1/entitlements/activate` | Path used when proxying activation requests. |
+| `activationPath` | `string` | `/entitlements/activate` | Path used when proxying activation requests. |
 
 ---
 

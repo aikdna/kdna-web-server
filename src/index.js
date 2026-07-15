@@ -3,7 +3,7 @@ import { resolveRuntime } from './runtime.js';
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const DEFAULT_ACTIVATION_PATH = '/v1/entitlements/activate';
+const DEFAULT_ACTIVATION_PATH = '/entitlements/activate';
 
 export class KDNAWebServerError extends Error {
   constructor(message, options = {}) {

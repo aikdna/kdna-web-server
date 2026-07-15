@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 (2026-07-16)
+
+- Change the default activation proxy target to the responsibility route
+  `/entitlements/activate` without retaining a compatibility alias.
+- Require future GitHub Release tags to equal the package's natural SemVer
+  coordinate without a generation-style prefix.
+- Add upstream route enforcement to the activation proxy integration test.
+
 ## 0.2.3 (2026-07-14)
 
 - Pin the tested KDNA Core compatibility declaration to 0.17.0.
@@ -31,9 +39,9 @@
 
 ## 0.1.1 (2026-07-03)
 
-- Load the default runtime from `@aikdna/kdna-core/v1` so published
-  generated apps can call `/inspect`, `/plan-load`, and `/load` against
-  the current Core v1 API.
+- Load the default runtime from the now-removed versioned Core subpath so
+  published generated apps could call `/inspect`, `/plan-load`, and `/load`
+  against the then-current Core API.
 - Normalize `repository.url` metadata for npm.
 - Use a CI-portable test glob.
 - Add `prepublishOnly` release protection.
