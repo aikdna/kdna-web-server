@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "ci": "npm test && npm run lint && npm pack --dry-run --json",
-    "test": "node --test tests/server.test.js",
+    "test": "node --test tests/server.test.js tests/release-context.test.cjs",
     "test:core-compat": "node --test tests/core-compat.test.js",
     "lint": "node scripts/lint.js",
     "prepublishOnly": "npm run ci"
