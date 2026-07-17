@@ -29,7 +29,7 @@ function jsonRequest(operation, body) {
   });
 }
 
-test('Core 0.17 validates, inspects, plans, and loads a real public asset', async () => {
+test('Core 0.20 validates, inspects, plans, and loads a real public asset', async () => {
   const assetPath = process.env.KDNA_WEB_CORE_ASSET;
   assert.ok(assetPath, 'KDNA_WEB_CORE_ASSET must point to a public .kdna fixture');
 

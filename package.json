@@ -28,11 +28,11 @@
     "node": ">=18"
   },
   "peerDependencies": {
-    "@aikdna/kdna-core": "0.17.0"
+    "@aikdna/kdna-core": "0.20.0"
   },
   "dependencies": {},
   "devDependencies": {
-    "@aikdna/kdna-core": "0.17.0"
+    "@aikdna/kdna-core": "0.20.0"
   },
   "license": "Apache-2.0",
   "repository": {

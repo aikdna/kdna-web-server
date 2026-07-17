@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      - name: Exercise the real Core 0.17.0 adapter path
+      - name: Exercise the real Core 0.20.0 adapter path
         env:
           KDNA_WEB_CORE_ASSET: public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.0.kdna
         run: npm run test:core-compat
