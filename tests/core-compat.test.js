@@ -59,7 +59,7 @@ test('Core 0.20 validates, inspects, plans, and loads a real public asset', asyn
       fileId: inspected.fileId,
       profile: 'compact',
     })));
-    assert.equal(loaded.capsule.type, 'kdna.context.capsule');
+    assert.equal(loaded.capsule.type, 'kdna.runtime-capsule');
     assert.equal(loaded.profile, 'compact');
     assert.ok(loaded.domain);
     assert.ok(loaded.content && typeof loaded.content === 'object');

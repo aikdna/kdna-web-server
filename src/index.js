@@ -185,7 +185,7 @@ function redactLicenseKey(value, licenseKey) {
 }
 
 function normalizeLoaded(result, options) {
-  if (result?.type === 'kdna.context.capsule') {
+  if (result?.type === 'kdna.runtime-capsule') {
     return {
       domain: result.domain || null,
       version: result.judgment_version || null,

@@ -2,6 +2,10 @@
 
 ## 0.3.0 (2026-07-16)
 
+- Move the peer Runtime API dependency from KDNA Core 0.17.0 to the published
+  `@aikdna/kdna-core@0.20.0` registry artifact. The server adapter now
+  recognizes the current `kdna.runtime-capsule` contract (Core 0.19+); the
+  retired `kdna.context.capsule` discriminator is no longer accepted.
 - Change the default activation proxy target to the responsibility route
   `/entitlements/activate` without retaining a compatibility alias.
 - Require future GitHub Release tags to equal the package's natural SemVer

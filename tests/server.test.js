@@ -35,7 +35,7 @@ function fakeRuntime() {
       assert.ok(input);
       if (options.as === 'json') {
         return {
-          type: 'kdna.context.capsule',
+          type: 'kdna.runtime-capsule',
           version: '1.0',
           domain: 'kdna:test:web',
           judgment_version: '0.1.0',
@@ -96,7 +96,7 @@ test('server validates, inspects, plans, and loads an uploaded asset', async () 
   })));
   assert.equal(loaded.content.highest_question, 'What should the server load?');
   assert.equal(loaded.profile, 'compact');
-  assert.equal(loaded.capsule.type, 'kdna.context.capsule');
+  assert.equal(loaded.capsule.type, 'kdna.runtime-capsule');
 });
 
 test('next and worker adapters expose reusable handlers', async () => {
