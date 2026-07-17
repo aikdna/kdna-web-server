@@ -232,7 +232,7 @@ requires.
     "axioms": []
   },
   "capsule": {
-    "type": "kdna.context.capsule",
+    "type": "kdna.runtime-capsule",
     "version": "1.0",
     "profile": "compact",
     "context": {
