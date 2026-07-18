@@ -10,6 +10,8 @@ const textExtensions = new Set(['.js', '.cjs', '.json', '.md', '.yml', '.yaml', 
 const findings = [];
 const forbiddenCredentialPrefixHash =
   '74f0f71d71864ef09245d0dafe6aba03129017f87ae023a18a1c38bb887ad76c';
+const canonicalApacheLicenseSha256 =
+  '699a9bdd9d3fb95f2146586a5fb1d7a6a6197a43422914f86869fed84c34222c';
 
 function containsForbiddenCredentialPrefix(text) {
   for (const match of text.matchAll(/(?=([A-Z0-9]{4}-[A-Z0-9]{3}-))/g)) {
@@ -48,6 +50,18 @@ for (const relative of trackedFiles()) {
     if (/(?:^|\/)(?:AGENTS|WORKLOG)\.md$/i.test(relative)) {
       findings.push(`${relative}: private coordination file`);
     }
+}
+
+const licenseDigest = crypto
+  .createHash('sha256')
+  .update(fs.readFileSync(path.join(root, 'LICENSE')))
+  .digest('hex');
+if (licenseDigest !== canonicalApacheLicenseSha256) {
+  findings.push('LICENSE: expected the complete canonical Apache-2.0 text');
+}
+const packageMetadata = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+if (packageMetadata.license !== 'Apache-2.0') {
+  findings.push('package.json: license must be Apache-2.0');
 }
 
 if (findings.length > 0) {
