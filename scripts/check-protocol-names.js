@@ -1,10 +1,10 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const excluded = new Set(['.git', 'node_modules']);
 const textExtensions = new Set(['.js', '.cjs', '.json', '.md', '.yml', '.yaml', '.txt']);
 const retired = [
   ['retired manifest discriminator', /kdna_version/],
@@ -20,17 +20,17 @@ function allowedThirdPartyReference(relative, line) {
   return relative === 'CODE_OF_CONDUCT.md' && /contributor-covenant\.org\/version\//.test(line);
 }
 
-function visit(directory) {
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (excluded.has(entry.name)) continue;
-    const absolute = path.join(directory, entry.name);
-    const relative = path.relative(root, absolute).split(path.sep).join('/');
-    if (entry.isDirectory()) {
-      visit(absolute);
-      continue;
-    }
-    if (!entry.isFile() || !textExtensions.has(path.extname(entry.name))) continue;
-    if (relative === 'scripts/check-protocol-names.js') continue;
+function trackedFiles() {
+  return execFileSync('git', ['ls-files', '-z'], { cwd: root })
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean);
+}
+
+for (const relative of trackedFiles()) {
+  if (!textExtensions.has(path.extname(relative))) continue;
+  if (relative === 'scripts/check-protocol-names.js') continue;
+  const absolute = path.join(root, relative);
     const bytes = fs.readFileSync(absolute);
     if (bytes.length > 1_000_000 || bytes.includes(0)) continue;
     const lines = bytes.toString('utf8').split(/\r?\n/);
@@ -42,10 +42,8 @@ function visit(directory) {
         if (pattern.test(line)) findings.push(`${relative}:${index + 1}: ${rule}`);
       }
     });
-  }
 }
 
-visit(root);
 if (findings.length > 0) {
   for (const finding of findings) console.error(finding);
   throw new Error(`protocol naming gate found ${findings.length} issue(s)`);

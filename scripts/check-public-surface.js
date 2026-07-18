@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const excluded = new Set(['.git', 'node_modules']);
 const textExtensions = new Set(['.js', '.cjs', '.json', '.md', '.yml', '.yaml', '.txt']);
 const findings = [];
 const forbiddenCredentialPrefixHash =
@@ -19,22 +19,23 @@ function containsForbiddenCredentialPrefix(text) {
   return false;
 }
 
-function visit(directory) {
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (excluded.has(entry.name)) continue;
-    const absolute = path.join(directory, entry.name);
-    const relative = path.relative(root, absolute).split(path.sep).join('/');
-    if (entry.isSymbolicLink()) {
-      findings.push(`${relative}: repository contains a symlink`);
-      continue;
-    }
-    if (entry.isDirectory()) {
-      visit(absolute);
-      continue;
-    }
-    if (!entry.isFile() || (!textExtensions.has(path.extname(entry.name)) && entry.name !== 'NOTICE')) {
-      continue;
-    }
+function trackedFiles() {
+  return execFileSync('git', ['ls-files', '-z'], { cwd: root })
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean);
+}
+
+for (const relative of trackedFiles()) {
+  const absolute = path.join(root, relative);
+  const stat = fs.lstatSync(absolute);
+  if (stat.isSymbolicLink()) {
+    findings.push(`${relative}: repository contains a symlink`);
+    continue;
+  }
+  if (!stat.isFile() || (!textExtensions.has(path.extname(relative)) && relative !== 'NOTICE')) {
+    continue;
+  }
     const bytes = fs.readFileSync(absolute);
     if (bytes.length > 1_000_000 || bytes.includes(0)) continue;
     const text = bytes.toString('utf8');
@@ -47,10 +48,8 @@ function visit(directory) {
     if (/(?:^|\/)(?:AGENTS|WORKLOG)\.md$/i.test(relative)) {
       findings.push(`${relative}: private coordination file`);
     }
-  }
 }
 
-visit(root);
 if (findings.length > 0) {
   for (const finding of findings) console.error(finding);
   throw new Error(`public-surface check found ${findings.length} issue(s)`);
