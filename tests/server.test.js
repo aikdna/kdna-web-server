@@ -36,16 +36,20 @@ function fakeRuntime() {
       if (options.as === 'json') {
         return {
           type: 'kdna.runtime-capsule',
-          version: '1.0',
-          domain: 'kdna:test:web',
-          judgment_version: '0.1.0',
-          profile: options.profile,
+          contract_version: '0.1.0',
+          asset: {
+            asset_id: 'kdna:aikdna:test-server',
+            asset_uid: 'urn:uuid:00000000-0000-4000-8000-000000000099',
+            version: '0.1.0',
+            judgment_version: '0.1.0',
+          },
+          profile: options.profile || 'compact',
           context: { highest_question: 'What should the server load?' },
           trace: { payload_encoding: 'cbor' },
         };
       }
       return {
-        asset_id: 'kdna:test:web',
+        asset_id: 'kdna:aikdna:test-server',
         version: '0.1.0',
         profile: options.profile,
         text: 'loaded prompt',
@@ -97,6 +101,8 @@ test('server validates, inspects, plans, and loads an uploaded asset', async () 
   assert.equal(loaded.content.highest_question, 'What should the server load?');
   assert.equal(loaded.profile, 'compact');
   assert.equal(loaded.capsule.type, 'kdna.runtime-capsule');
+    assert.equal(loaded.capsule.asset.asset_id, 'kdna:aikdna:test-server');
+    assert.equal(loaded.capsule.asset.version, '0.1.0');
 });
 
 test('next and worker adapters expose reusable handlers', async () => {

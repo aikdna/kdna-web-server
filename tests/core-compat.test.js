@@ -60,8 +60,10 @@ test('Core 0.20 validates, inspects, plans, and loads a real public asset', asyn
       profile: 'compact',
     })));
     assert.equal(loaded.capsule.type, 'kdna.runtime-capsule');
+    assert.equal(loaded.domain, 'kdna:aikdna:laozi-wuwei');
+    assert.equal(loaded.version, '0.1.1');
+    assert.equal(loaded.judgmentVersion, '0.1.0');
     assert.equal(loaded.profile, 'compact');
-    assert.ok(loaded.domain);
     assert.ok(loaded.content && typeof loaded.content === 'object');
   } finally {
     fs.rmSync(storageDir, { recursive: true, force: true });

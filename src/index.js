@@ -188,7 +188,8 @@ function normalizeLoaded(result, options) {
   if (result?.type === 'kdna.runtime-capsule') {
     return {
       domain: result.asset?.asset_id || null,
-      version: result.asset?.judgment_version || null,
+      version: result.asset?.version || null,
+      judgmentVersion: result.asset?.judgment_version || null,
       profile: result.profile || options.profile || 'compact',
       content: result.context || {},
       capsule: result,
