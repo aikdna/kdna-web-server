@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: aikdna/kdna-assets
-          ref: 931033e56be1c59457958da701b71a2da775021e
+          ref: 30a4b9b  # TODO: update to final kdna-assets commit after asset push
           path: public-assets
       - uses: actions/setup-node@v6
         with:
