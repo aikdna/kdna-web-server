@@ -51,6 +51,12 @@ Wrong credentials receive a generic `KDNA_DECRYPT_FAILED` response. Provider
 error bodies, cryptographic implementation details, and internal paths are not
 part of the public HTTP error contract.
 
+Multipart uploads and JSON bodies are byte-bounded before parsing. Activation
+requests use the canonical entitlement route, refuse redirects, accept HTTPS
+origins (plus exact loopback HTTP for local development), and keep a timeout
+active until the bounded JSON response body has been consumed. Successful
+responses with unknown or private fields fail closed.
+
 There is no session storage of credentials. Each `/load` call requires
 the password or signed entitlement to be supplied again.
 

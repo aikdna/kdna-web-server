@@ -16,7 +16,6 @@ What integration problem does this solve?
 
 - [ ] Next.js
 - [ ] Express
-- [ ] Cloudflare Workers
 - [ ] Generic Node
 
 ## Public Contract Impact

@@ -6,7 +6,7 @@
 - [ ] Server adapter API
 - [ ] Next.js adapter
 - [ ] Express adapter
-- [ ] Cloudflare Workers adapter
+- [ ] Generic Node.js server surface
 - [ ] Security / entitlement behavior
 - [ ] Documentation or package metadata only
 

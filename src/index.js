@@ -1,9 +1,28 @@
+import { Buffer } from 'node:buffer';
+import { createRequire } from 'node:module';
 import { createFileStorage } from './storage.js';
 import { resolveRuntime } from './runtime.js';
 
+const require = createRequire(import.meta.url);
+const corePackage = require('@aikdna/kdna-core/package.json');
+const manifestSchema = require('@aikdna/kdna-core/schema/manifest.schema.json');
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 const DEFAULT_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const DEFAULT_ACTIVATION_PATH = '/entitlements/activate';
+const DEFAULT_MAX_JSON_BODY_BYTES = 64 * 1024;
+const DEFAULT_MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+const MAX_ACTIVATION_RESPONSE_BYTES = 64 * 1024;
+const DEFAULT_ACTIVATION_TIMEOUT_MS = 10_000;
+const MACHINE_FINGERPRINT_RE = /^[0-9a-f]{64}$/;
+const LICENSE_ID_RE = /^[A-Za-z0-9_\-:.]{1,128}$/;
+const CORE_CONFORMANCE_VERSION = '0.20.0';
+const POST_OPERATIONS = new Set(['validate', 'inspect', 'plan-load', 'load', 'activate', 'export']);
+export const ENTITLEMENT_ACTIVATE_PATH = '/entitlements/activate';
+
+const assetIdPattern = manifestSchema?.properties?.asset_id?.pattern;
+if (corePackage.version !== CORE_CONFORMANCE_VERSION || typeof assetIdPattern !== 'string') {
+  throw new Error(`KDNA Web Server requires the exact Core ${CORE_CONFORMANCE_VERSION} contract`);
+}
+const ASSET_ID_RE = new RegExp(assetIdPattern, 'u');
 
 export class KDNAWebServerError extends Error {
   constructor(message, options = {}) {
@@ -17,6 +36,34 @@ export class KDNAWebServerError extends Error {
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body, null, 2), { status, headers: JSON_HEADERS });
+}
+
+function publicString(value) {
+  return typeof value === 'string' ? value : null;
+}
+
+async function readBoundedBytes(body, maxBytes) {
+  const reader = body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks = [];
+  let byteLength = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    byteLength += value.byteLength;
+    if (byteLength > maxBytes) {
+      await reader.cancel();
+      throw new RangeError('body exceeds byte limit');
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(byteLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }
 
 function errorResponse(error) {
@@ -59,19 +106,48 @@ function errorResponse(error) {
 }
 
 function normalizeOperation(request, options = {}) {
-  if (options.operation) return String(options.operation).replace(/^\/+/, '');
+  if (options.operation != null) {
+    const operation = String(options.operation);
+    return /^[a-z]+(?:-[a-z]+)*$/.test(operation) ? operation : '__invalid_route__';
+  }
   const url = new URL(request.url);
-  const basePath = options.basePath || '/api/kdna';
-  let pathname = url.pathname;
-  if (pathname.startsWith(basePath)) pathname = pathname.slice(basePath.length);
-  const segment = pathname.split('/').filter(Boolean).at(-1);
-  return segment || 'health';
+  const configuredBasePath = options.basePath || '/api/kdna';
+  const basePath = configuredBasePath === '/'
+    ? ''
+    : `/${String(configuredBasePath).split('/').filter(Boolean).join('/')}`;
+  if (url.pathname === basePath || url.pathname === `${basePath}/`) return 'health';
+  if (!url.pathname.startsWith(`${basePath}/`)) return '__invalid_route__';
+  const operation = url.pathname.slice(basePath.length + 1);
+  return /^[a-z]+(?:-[a-z]+)*$/.test(operation) ? operation : '__invalid_route__';
 }
 
-async function parseJson(request) {
+async function parseJson(request, options = {}) {
+  const maxBytes = Number.isFinite(options.maxJsonBodyBytes)
+    ? options.maxJsonBodyBytes
+    : DEFAULT_MAX_JSON_BODY_BYTES;
+  const contentLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new KDNAWebServerError('Request JSON exceeds maxJsonBodyBytes.', {
+      status: 413,
+      code: 'KDNA_JSON_TOO_LARGE',
+    });
+  }
   try {
-    return await request.json();
+    const bytes = await readBoundedBytes(request.body, maxBytes);
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    const value = JSON.parse(text);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new TypeError('JSON body is not an object');
+    }
+    return value;
   } catch (error) {
+    if (error instanceof RangeError) {
+      throw new KDNAWebServerError('Request JSON exceeds maxJsonBodyBytes.', {
+        status: 413,
+        code: 'KDNA_JSON_TOO_LARGE',
+        cause: error,
+      });
+    }
     throw new KDNAWebServerError('Request body must be valid JSON.', {
       status: 400,
       code: 'KDNA_INVALID_JSON',
@@ -81,10 +157,32 @@ async function parseJson(request) {
 }
 
 async function readUploadedFile(request, options = {}) {
+  const maxFileSizeBytes = options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
+  const maxMultipartBodyBytes = options.maxMultipartBodyBytes
+    ?? (Number.isFinite(maxFileSizeBytes)
+      ? maxFileSizeBytes + DEFAULT_MULTIPART_OVERHEAD_BYTES
+      : Number.POSITIVE_INFINITY);
+  const contentLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maxMultipartBodyBytes) {
+    throw new KDNAWebServerError('Multipart request exceeds maxMultipartBodyBytes.', {
+      status: 413,
+      code: 'KDNA_MULTIPART_TOO_LARGE',
+    });
+  }
   let form;
   try {
-    form = await request.formData();
+    const bytes = await readBoundedBytes(request.body, maxMultipartBodyBytes);
+    form = await new Response(bytes, {
+      headers: { 'content-type': request.headers.get('content-type') || '' },
+    }).formData();
   } catch (error) {
+    if (error instanceof RangeError) {
+      throw new KDNAWebServerError('Multipart request exceeds maxMultipartBodyBytes.', {
+        status: 413,
+        code: 'KDNA_MULTIPART_TOO_LARGE',
+        cause: error,
+      });
+    }
     throw new KDNAWebServerError('Request body must be multipart/form-data with a file field.', {
       status: 400,
       code: 'KDNA_INVALID_MULTIPART',
@@ -99,7 +197,6 @@ async function readUploadedFile(request, options = {}) {
       code: 'KDNA_FILE_REQUIRED',
     });
   }
-  const maxFileSizeBytes = options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
   if (Number.isFinite(maxFileSizeBytes) && file.size > maxFileSizeBytes) {
     throw new KDNAWebServerError(`KDNA file exceeds maxFileSizeBytes (${maxFileSizeBytes}).`, {
       status: 413,
@@ -110,12 +207,14 @@ async function readUploadedFile(request, options = {}) {
 }
 
 function validationSummary(result, inspectResult = null) {
+  const problemCount = Array.isArray(result?.problems)
+    ? result.problems.length
+    : Array.isArray(result?.warnings) ? result.warnings.length : 0;
   return {
     valid: Boolean(result?.overall_valid ?? result?.ok),
-    domain: inspectResult?.asset_id || inspectResult?.asset?.asset_id || inspectResult?.name || null,
-    version: inspectResult?.version || inspectResult?.asset?.version || null,
-    warnings: result?.warnings || [],
-    result,
+    domain: publicString(inspectResult?.asset_id || inspectResult?.asset?.asset_id || inspectResult?.name),
+    version: publicString(inspectResult?.version || inspectResult?.asset?.version),
+    warnings: problemCount === 0 ? [] : ['KDNA_VALIDATION_FAILED'],
   };
 }
 
@@ -124,14 +223,55 @@ function inspectSummary(inspectResult) {
     || inspectResult.profiles
     || Object.keys(inspectResult.manifest?.load_contract?.profiles || {});
 
+  const defaultProfile = inspectResult.load_contract_default_profile
+    || inspectResult.manifest?.load_contract?.default_profile
+    || null;
+
   return {
-    domain: inspectResult.asset_id || inspectResult.name || null,
-    version: inspectResult.version || inspectResult.asset?.version || null,
-    title: inspectResult.title || inspectResult.asset?.title || null,
-    description: inspectResult.description || inspectResult.summary || inspectResult.manifest?.description || null,
-    encrypted: Boolean(inspectResult.encrypted || inspectResult.manifest?.payload?.encrypted),
-    profiles,
-    inspect: inspectResult,
+    domain: publicString(inspectResult.asset_id || inspectResult.name),
+    version: publicString(inspectResult.version || inspectResult.asset?.version),
+    title: publicString(inspectResult.title || inspectResult.asset?.title),
+    description: publicString(
+      inspectResult.description || inspectResult.summary || inspectResult.manifest?.description,
+    ),
+    encrypted: Boolean(
+      inspectResult.payload_encrypted
+      ?? inspectResult.encrypted
+      ?? inspectResult.manifest?.payload?.encrypted,
+    ),
+    defaultProfile: publicString(defaultProfile),
+    ...(Array.isArray(profiles) && profiles.length > 0
+      ? { profiles: profiles.filter((profile) => typeof profile === 'string') }
+      : {}),
+  };
+}
+
+function publicLoadPlan(plan) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) return null;
+  const asset = plan.asset && typeof plan.asset === 'object' && !Array.isArray(plan.asset)
+    ? {
+        asset_id: publicString(plan.asset.asset_id),
+        asset_uid: publicString(plan.asset.asset_uid),
+        title: publicString(plan.asset.title),
+        version: publicString(plan.asset.version),
+        judgment_version: publicString(plan.asset.judgment_version),
+      }
+    : null;
+  const checks = plan.checks && typeof plan.checks === 'object'
+    ? Object.fromEntries(
+        Object.entries(plan.checks)
+          .filter(([, value]) => typeof value === 'boolean'),
+      )
+    : {};
+  return {
+    format_version: publicString(plan.format_version),
+    asset,
+    access: publicString(plan.access),
+    state: publicString(plan.state),
+    required_action: publicString(plan.required_action),
+    can_load_now: Boolean(plan.can_load_now),
+    projection_policy: publicString(plan.projection_policy),
+    checks,
   };
 }
 
@@ -155,52 +295,195 @@ function normalizeLoadOptions(body = {}) {
   return options;
 }
 
-function normalizeActivationBody(body = {}) {
-  const normalized = { ...body };
-  if (normalized.license_key == null && normalized.licenseKey != null) {
-    normalized.license_key = normalized.licenseKey;
+function activationField(body, snakeName, camelName) {
+  if (body[snakeName] != null && body[camelName] != null && body[snakeName] !== body[camelName]) {
+    throw new KDNAWebServerError(`Conflicting ${snakeName} fields.`, {
+      status: 400,
+      code: 'KDNA_ACTIVATION_INVALID_REQUEST',
+    });
   }
-  if (normalized.machine_fingerprint == null && normalized.machineFingerprint != null) {
-    normalized.machine_fingerprint = normalized.machineFingerprint;
-  }
-  delete normalized.licenseKey;
-  delete normalized.machineFingerprint;
-  return normalized;
+  return body[snakeName] ?? body[camelName];
 }
 
-function redactLicenseKey(value, licenseKey) {
-  if (!licenseKey) return value;
-  if (typeof value === 'string') {
-    return value.split(licenseKey).join('[redacted-license-key]');
+function normalizeActivationBody(body = {}) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new KDNAWebServerError('Activation body must be a JSON object.', {
+      status: 400,
+      code: 'KDNA_ACTIVATION_INVALID_REQUEST',
+    });
   }
-  if (Array.isArray(value)) {
-    return value.map((entry) => redactLicenseKey(entry, licenseKey));
+  const domain = body.domain;
+  const licenseKey = activationField(body, 'license_key', 'licenseKey');
+  const machineFingerprint = activationField(
+    body,
+    'machine_fingerprint',
+    'machineFingerprint',
+  );
+  if (typeof domain !== 'string' || !ASSET_ID_RE.test(domain)) {
+    throw new KDNAWebServerError('domain must be a canonical KDNA asset_id.', {
+      status: 400,
+      code: 'KDNA_ACTIVATION_INVALID_DOMAIN',
+    });
   }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, redactLicenseKey(entry, licenseKey)]),
+  if (typeof licenseKey !== 'string' || licenseKey.length === 0) {
+    throw new KDNAWebServerError('license_key is required.', {
+      status: 400,
+      code: 'KDNA_ACTIVATION_LICENSE_REQUIRED',
+    });
+  }
+  if (
+    machineFingerprint != null &&
+    (typeof machineFingerprint !== 'string' || !MACHINE_FINGERPRINT_RE.test(machineFingerprint))
+  ) {
+    throw new KDNAWebServerError('machine_fingerprint must be a canonical SHA-256 digest.', {
+      status: 400,
+      code: 'KDNA_ACTIVATION_INVALID_MACHINE',
+    });
+  }
+  if (body.client != null && (typeof body.client !== 'string' || body.client.length === 0)) {
+    throw new KDNAWebServerError('client must be a nonempty string when supplied.', {
+      status: 400,
+      code: 'KDNA_ACTIVATION_INVALID_REQUEST',
+    });
+  }
+  return {
+    domain,
+    license_key: licenseKey,
+    ...(machineFingerprint == null ? {} : { machine_fingerprint: machineFingerprint }),
+    ...(body.client == null ? {} : { client: body.client }),
+  };
+}
+
+const PRIVATE_RESPONSE_FIELDS = new Set([
+  'license_key',
+  'licenseKey',
+  'password',
+  'private_key',
+  'privateKey',
+  'admin_token',
+  'adminToken',
+]);
+const ACTIVATION_SUCCESS_FIELDS = new Set([
+  'version',
+  'license_id',
+  'domain',
+  'issued_to',
+  'issued_at',
+  'expires_at',
+  'status',
+  'revoked',
+  'revoked_at',
+  'revocation_reason',
+  'require_machine_binding',
+  'require_online_check',
+  'offline_grace_days',
+  'allowed_agents',
+  'last_checked_at',
+  'offline_valid_until',
+  'updated_at',
+  'machine_fingerprint',
+  'signature_base64',
+]);
+
+function containsPrivateResponseField(value) {
+  if (Array.isArray(value)) return value.some(containsPrivateResponseField);
+  if (!value || typeof value !== 'object') return false;
+  return Object.entries(value).some(
+    ([key, entry]) => PRIVATE_RESPONSE_FIELDS.has(key) || containsPrivateResponseField(entry),
+  );
+}
+
+function isCanonicalEd25519Signature(value) {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return false;
+  const decoded = Buffer.from(value, 'base64');
+  return decoded.byteLength === 64 && decoded.toString('base64') === value;
+}
+
+function validateActivationSuccess(payload, requestBody) {
+  if (
+    Object.keys(payload).some((field) => !ACTIVATION_SUCCESS_FIELDS.has(field)) ||
+    !LICENSE_ID_RE.test(payload.license_id || '') ||
+    payload.domain !== requestBody.domain ||
+    payload.status !== 'active' ||
+    payload.revoked !== false ||
+    typeof payload.require_machine_binding !== 'boolean' ||
+    !isCanonicalEd25519Signature(payload.signature_base64) ||
+    containsPrivateResponseField(payload) ||
+    (payload.require_machine_binding === true && (
+      requestBody.machine_fingerprint == null ||
+      payload.machine_fingerprint !== requestBody.machine_fingerprint
+    )) ||
+    (payload.require_machine_binding === false && payload.machine_fingerprint != null)
+  ) {
+    throw new Error('activation success response violates the entitlement contract');
+  }
+}
+
+function activationEndpoint(activationServerUrl, activationPath) {
+  if (activationPath != null && activationPath !== ENTITLEMENT_ACTIVATE_PATH) {
+    throw new KDNAWebServerError('activationPath must use the canonical entitlement route.', {
+      status: 500,
+      code: 'KDNA_ACTIVATION_INVALID_CONFIGURATION',
+    });
+  }
+  let parsed;
+  try {
+    parsed = new URL(activationServerUrl);
+  } catch {
+    throw new KDNAWebServerError('activationServerUrl must be a canonical origin.', {
+      status: 500,
+      code: 'KDNA_ACTIVATION_INVALID_CONFIGURATION',
+    });
+  }
+  const loopback = parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]';
+  if (
+    parsed.username ||
+    parsed.password ||
+    parsed.pathname !== '/' ||
+    parsed.search ||
+    parsed.hash ||
+    (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && loopback))
+  ) {
+    throw new KDNAWebServerError(
+      'activationServerUrl must be an HTTPS origin or an exact loopback HTTP origin.',
+      { status: 500, code: 'KDNA_ACTIVATION_INVALID_CONFIGURATION' },
     );
   }
-  return value;
+  return `${parsed.origin}${ENTITLEMENT_ACTIVATE_PATH}`;
+}
+
+async function readBoundedActivationJson(response) {
+  const contentLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_ACTIVATION_RESPONSE_BYTES) {
+    throw new Error('activation response exceeds the public limit');
+  }
+  const bytes = await readBoundedBytes(response.body, MAX_ACTIVATION_RESPONSE_BYTES);
+  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  if (!text) return {};
+  if (!/^application\/json(?:\s*;|$)/i.test(response.headers.get('content-type') || '')) {
+    throw new Error('activation response is not JSON');
+  }
+  const payload = JSON.parse(text);
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('activation response must be a JSON object');
+  }
+  return payload;
 }
 
 function normalizeLoaded(result, options) {
-  if (result?.type === 'kdna.runtime-capsule') {
-    return {
-      domain: result.asset?.asset_id || null,
-      version: result.asset?.version || null,
-      judgmentVersion: result.asset?.judgment_version || null,
-      profile: result.profile || options.profile || 'compact',
-      content: result.context || {},
-      capsule: result,
-    };
+  if (result?.type !== 'kdna.runtime-capsule') {
+    throw new KDNAWebServerError('KDNA runtime returned an unsupported load response.', {
+      status: 500,
+      code: 'KDNA_RUNTIME_CONTRACT_VIOLATION',
+    });
   }
   return {
-    domain: result.asset_id || result.domain || null,
-    version: result.version || null,
+    domain: result.asset?.asset_id || null,
+    version: result.asset?.version || null,
+    judgmentVersion: result.asset?.judgment_version || null,
     profile: result.profile || options.profile || 'compact',
-    content: result.text || result.content || result,
-    result,
+    content: result.context || {},
+    capsule: result,
   };
 }
 
@@ -212,20 +495,64 @@ async function maybeProxyActivation(body, options = {}) {
     });
   }
   const activationBody = normalizeActivationBody(body);
-  const endpoint = new URL(options.activationPath || DEFAULT_ACTIVATION_PATH, options.activationServerUrl);
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(activationBody),
-  });
-  const text = await response.text();
+  const endpoint = activationEndpoint(options.activationServerUrl, options.activationPath);
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    options.activationTimeoutMs ?? DEFAULT_ACTIVATION_TIMEOUT_MS,
+  );
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(activationBody),
+      redirect: 'error',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timeout);
+    throw new KDNAWebServerError('Activation server request failed.', {
+      status: 502,
+      code: 'KDNA_ACTIVATION_UPSTREAM_UNAVAILABLE',
+      cause: error,
+    });
+  }
   let payload;
   try {
-    payload = text ? JSON.parse(text) : {};
-  } catch {
-    payload = { raw: text };
+    payload = await readBoundedActivationJson(response);
+  } catch (error) {
+    throw new KDNAWebServerError('Activation server returned an invalid response.', {
+      status: 502,
+      code: 'KDNA_ACTIVATION_BAD_UPSTREAM',
+      cause: error,
+    });
+  } finally {
+    clearTimeout(timeout);
   }
-  payload = redactLicenseKey(payload, activationBody.license_key);
+  if (!response.ok) {
+    const upstreamCode = payload?.error?.code;
+    const code = typeof upstreamCode === 'string' && /^[A-Z][A-Z0-9_]*$/.test(upstreamCode)
+      ? upstreamCode
+      : 'KDNA_ACTIVATION_REJECTED';
+    return jsonResponse({
+      ok: false,
+      error: {
+        code,
+        message: 'Activation request was rejected.',
+        retryable: Boolean(payload?.error?.retryable),
+      },
+    }, response.status >= 400 && response.status <= 599 ? response.status : 502);
+  }
+  try {
+    validateActivationSuccess(payload, activationBody);
+  } catch (error) {
+    throw new KDNAWebServerError('Activation server returned an invalid response.', {
+      status: 502,
+      code: 'KDNA_ACTIVATION_BAD_UPSTREAM',
+      cause: error,
+    });
+  }
   return jsonResponse(payload, response.status);
 }
 
@@ -243,6 +570,13 @@ export function createKDNAServer(options = {}) {
           return jsonResponse({ ok: true, service: 'kdna-web-server' });
         }
 
+        if (!POST_OPERATIONS.has(operation)) {
+          throw new KDNAWebServerError('Unknown KDNA operation.', {
+            status: 404,
+            code: 'KDNA_ROUTE_NOT_FOUND',
+          });
+        }
+
         if (request.method !== 'POST') {
           return jsonResponse({ error: { code: 'KDNA_METHOD_NOT_ALLOWED', message: 'Use POST for KDNA operations.' } }, 405);
         }
@@ -250,8 +584,14 @@ export function createKDNAServer(options = {}) {
         if (operation === 'validate') {
           const file = await readUploadedFile(request, options);
           const stored = await storage.put(file);
-          const result = runtime.validate(stored.path);
-          const inspected = runtime.inspect ? runtime.inspect(stored.path) : null;
+          let result;
+          try {
+            result = runtime.validate(stored.path);
+          } catch {
+            result = { overall_valid: false, problems: ['KDNA_FORMAT_INVALID'] };
+          }
+          const valid = Boolean(result?.overall_valid ?? result?.ok);
+          const inspected = valid && runtime.inspect ? runtime.inspect(stored.path) : null;
           return jsonResponse({ fileId: stored.id, ...validationSummary(result, inspected) });
         }
 
@@ -269,23 +609,23 @@ export function createKDNAServer(options = {}) {
               expiresAt: stored.expiresAt,
             },
             ...inspectSummary(inspected),
-            loadPlan: plan,
+            loadPlan: publicLoadPlan(plan),
           });
         }
 
         if (operation === 'plan-load') {
-          const body = await parseJson(request);
+          const body = await parseJson(request, options);
           const stored = await storage.get(body.fileId);
           const plan = runtime.planLoad(stored.path, normalizePlanContext(body.context || body));
           return jsonResponse({
             canProceed: Boolean(plan.can_load_now),
             missing: plan.can_load_now ? [] : [plan.required_action].filter(Boolean),
-            plan,
+            plan: publicLoadPlan(plan),
           });
         }
 
         if (operation === 'load') {
-          const body = await parseJson(request);
+          const body = await parseJson(request, options);
           const stored = await storage.get(body.fileId);
           const loadOptions = normalizeLoadOptions(body);
           const loaded = runtime.loadAuthorized(stored.path, loadOptions);
@@ -293,8 +633,8 @@ export function createKDNAServer(options = {}) {
         }
 
         if (operation === 'activate') {
-          const body = await parseJson(request);
-          return maybeProxyActivation(body, options);
+          const body = await parseJson(request, options);
+          return await maybeProxyActivation(body, options);
         }
 
         if (operation === 'export') {
@@ -304,7 +644,7 @@ export function createKDNAServer(options = {}) {
           });
         }
 
-        throw new KDNAWebServerError(`Unknown KDNA operation: ${operation}`, {
+        throw new KDNAWebServerError('Unknown KDNA operation.', {
           status: 404,
           code: 'KDNA_ROUTE_NOT_FOUND',
         });

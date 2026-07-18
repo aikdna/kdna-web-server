@@ -10,7 +10,7 @@ assignees: ""
 
 ## Adapter / Runtime
 
-- Adapter: Next.js / Express / Cloudflare Workers / generic Node
+- Adapter: Next.js / Express / generic Node
 - Node version:
 - Package version or commit:
 

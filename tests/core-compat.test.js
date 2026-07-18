@@ -30,8 +30,11 @@ function jsonRequest(operation, body) {
 }
 
 test('Core 0.20 validates, inspects, plans, and loads a real public asset', async () => {
-  const assetPath = process.env.KDNA_WEB_CORE_ASSET // public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.1.kdna;
-  assert.ok(assetPath, 'KDNA_WEB_CORE_ASSET // public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.1.kdna must point to a public .kdna fixture');
+  const assetPath = process.env.KDNA_WEB_CORE_ASSET;
+  assert.ok(
+    assetPath,
+    'KDNA_WEB_CORE_ASSET must point to an accepted public .kdna fixture',
+  );
 
   const bytes = fs.readFileSync(assetPath);
   const storageDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kdna-web-core-compat-'));
@@ -46,7 +49,11 @@ test('Core 0.20 validates, inspects, plans, and loads a real public asset', asyn
     const inspected = await readJson(await server.handle(uploadRequest('inspect', bytes)));
     assert.ok(inspected.fileId);
     assert.ok(inspected.domain);
+    assert.equal(inspected.encrypted, false);
+    assert.equal(inspected.defaultProfile, 'compact');
+    assert.equal(inspected.profiles, undefined);
     assert.equal(inspected.loadPlan.can_load_now, true);
+    assert.doesNotMatch(JSON.stringify(inspected), new RegExp(storageDir));
 
     const planned = await readJson(await server.handle(jsonRequest('plan-load', {
       fileId: inspected.fileId,
@@ -54,6 +61,7 @@ test('Core 0.20 validates, inspects, plans, and loads a real public asset', asyn
     })));
     assert.equal(planned.canProceed, true);
     assert.deepEqual(planned.missing, []);
+    assert.doesNotMatch(JSON.stringify(planned), new RegExp(storageDir));
 
     const loaded = await readJson(await server.handle(jsonRequest('load', {
       fileId: inspected.fileId,

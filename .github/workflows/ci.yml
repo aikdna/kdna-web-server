@@ -3,8 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'CHANGELOG.md'
   pull_request:
     branches: [main]
 
@@ -13,21 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['18', '20', '22']
+        node: ['18.20.8', '20.20.2', '22.23.1']
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           repository: aikdna/kdna-assets
-          ref: 30a4b9b  # TODO: update to final kdna-assets commit after asset push
+          ref: 2dd1e2844fd8b8deff8ea0e2620fd946e5c9544f
           path: public-assets
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: ${{ matrix.node }}
-      - run: npm ci
-      - run: npm run lint
+          check-latest: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm test
+      - run: npm run lint
       - name: Exercise the real Core 0.20.0 adapter path
         env:
-          KDNA_WEB_CORE_ASSET: public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.0.kdna
+          KDNA_WEB_CORE_ASSET: public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.1.kdna
         run: npm run test:core-compat
+      - run: npm pack --dry-run --ignore-scripts

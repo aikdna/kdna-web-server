@@ -38,8 +38,8 @@ structured `/export` 501 response.
 
 ## Deployment notes
 
-- Vercel edge functions: use the Cloudflare Workers adapter instead —
-  the Next.js adapter targets the Node.js runtime.
+- Edge functions are outside the verified 0.3.0 surface. Configure the route
+  for the Next.js Node.js runtime.
 - Vercel Node.js runtime: set `storageDir` to `/tmp` (ephemeral but
   available within a single invocation).
 - Self-hosted: any writable path works. Clean up stale files with a

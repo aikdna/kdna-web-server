@@ -5,7 +5,7 @@
 Open an issue at the repository. Include:
 
 - Node.js version (`node --version`)
-- Framework and version (Next.js, Express, Cloudflare Workers)
+- Framework and version (Next.js or Express on Node.js)
 - Minimal reproduction steps
 - Expected vs actual behavior
 - Any relevant error output or stack trace

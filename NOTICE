@@ -6,7 +6,7 @@ https://github.com/aikdna/kdna-web-server
 
 kdna-web-server is a server-side adapter layer for the KDNA runtime.
 It wraps @aikdna/kdna-core and @aikdna/kdna-studio-core for use in
-Node.js, Next.js, Express, and Cloudflare Workers environments.
+Node.js, Next.js, and Express environments.
 
 All KDNA decryption, license verification, and entitlement checks
 are performed server-side. The browser receives only metadata and
