@@ -1,9 +1,26 @@
 # Changelog
 
-## 0.3.0 (2026-07-16)
+## 0.3.0 (2026-07-18)
 
+- Bind the adapter to the exact published `@aikdna/kdna-core@0.20.0` runtime
+  and current `kdna.runtime-capsule` contract.
+- Verify validate, inspect, plan-load, and load against the accepted public
+  Laozi asset 0.1.1 in CI.
 - Change the default activation proxy target to the responsibility route
   `/entitlements/activate` without retaining a compatibility alias.
+- Integrate the exact Activation 0.2 package and cover bound and unbound
+  entitlement activation.
+- Enforce canonical asset IDs, routes, activation origins, request and response
+  byte limits, total response timeouts, no redirects, and strict successful
+  entitlement response fields.
+- Remove local paths, provider details, credential fields, and raw runtime
+  results from public JSON responses; invalid containers now return
+  `valid: false`, and non-Capsule load results fail closed.
+- Correct Core inspect mapping for encryption state and default profile.
+- Limit the verified runtime surface to Node.js-hosted Next.js and Express;
+  remove the unverified Worker adapter and export.
+- Add public-surface, protocol-name, exact-release-event, immutable-action, and
+  exact-asset release gates.
 - Require future GitHub Release tags to equal the package's natural SemVer
   coordinate without a generation-style prefix.
 - Add upstream route enforcement to the activation proxy integration test.

@@ -1,16 +1,15 @@
 # Getting started with @aikdna/kdna-web-server
 
 This guide walks through the minimum viable setup for a Next.js App
-Router project. The same concepts apply to Express and Cloudflare
-Workers — see the adapter guides linked at the end.
+Router project. The same concepts apply to Express; both adapters target the
+Node.js runtime.
 
 ---
 
 ## Prerequisites
 
 - Node.js 18 or later
-- An existing Next.js 14+ project, Express app, or Cloudflare Workers
-  project
+- An existing Next.js 14+ project or Express app running on Node.js
 - `@aikdna/kdna-core` installed
 
 ---
@@ -21,8 +20,8 @@ Workers — see the adapter guides linked at the end.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-Use `@aikdna/kdna-core@0.17.0` with this server MVP. Other Core versions are
-outside the adapter's current tested compatibility declaration.
+Use the exact `@aikdna/kdna-core@0.20.0` runtime with Web Server 0.3.0. Other
+Core versions are outside the adapter's tested compatibility declaration.
 
 Studio export is not included in the server MVP yet.
 
@@ -70,8 +69,8 @@ Expected response:
 ```json
 {
   "valid": true,
-  "domain": "@author/asset-name",
-  "version": "1.0.0",
+  "domain": "kdna:aikdna:laozi-wuwei",
+  "version": "0.1.1",
   "warnings": []
 }
 ```
@@ -105,5 +104,4 @@ curl -X POST http://localhost:3000/api/kdna/load \
   trust boundary before adding authentication
 - [Next.js adapter guide](./adapters/nextjs.md)
 - [Express adapter guide](./adapters/express.md)
-- [Cloudflare Workers adapter guide](./adapters/cloudflare-workers.md)
 - [Build a complete UI](https://github.com/aikdna/kdna-react)

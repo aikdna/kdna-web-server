@@ -2,8 +2,8 @@
 
 **Server-side adapter for the KDNA runtime.**
 
-Mount one function call and your Next.js, Express, or Cloudflare Workers
-app gains an MVP KDNA API: validate, inspect, plan-load, load, and
+Mount one function call and your Node.js-hosted Next.js or Express app gains
+a KDNA API: validate, inspect, plan-load, load, and
 activation proxying. Studio export is not included in this server MVP yet.
 
 > **Security invariant:** decryption, license verification, and
@@ -29,9 +29,10 @@ activation proxying. Studio export is not included in this server MVP yet.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-The server MVP expects `@aikdna/kdna-core@0.17.0`, matching the KDNA runtime
-APIs used for `inspect`, `validate`, `plan-load`, and `load`. Other Core
-versions are intentionally outside this release's tested peer range.
+Version 0.3.0 requires the exact `@aikdna/kdna-core@0.20.0` runtime contract.
+Other Core versions are intentionally outside this release's tested peer
+range. The package targets Node.js 18 or later; Edge and Worker runtimes are
+not part of the verified 0.3.0 surface.
 
 The load endpoint defaults to Core's JSON Runtime Capsule. The server stores
 the uploaded `.kdna` file but does not decode `payload.kdnab` itself; all
@@ -86,24 +87,6 @@ app.listen(3000)
 
 → [Full Express guide](./docs/adapters/express.md)
 
-### Cloudflare Workers
-
-```js
-import { createKDNAWorkerRouter } from '@aikdna/kdna-web-server/cloudflare'
-
-const router = createKDNAWorkerRouter({
-  storage: customStorage,
-})
-
-export default {
-  fetch: (request, env, ctx) => router.handle(request, env, ctx),
-}
-```
-
-→ [Full Cloudflare Workers guide](./docs/adapters/cloudflare-workers.md)
-
----
-
 ## HTTP API reference
 
 All endpoints accept `multipart/form-data` or `application/json` as
@@ -125,8 +108,8 @@ any content.
 ```json
 {
   "valid": true,
-  "domain": "@author/asset-name",
-  "version": "1.2.0",
+  "domain": "kdna:aikdna:laozi-wuwei",
+  "version": "0.1.1",
   "warnings": []
 }
 ```
@@ -148,18 +131,24 @@ No decryption is performed.
 
 ```json
 {
-  "domain": "@author/asset-name",
-  "version": "1.2.0",
+  "fileId": "8d1b2ab0-...",
+  "domain": "kdna:aikdna:laozi-wuwei",
+  "version": "0.1.1",
   "title": "Asset display name",
   "description": "...",
+  "encrypted": false,
+  "defaultProfile": "compact",
   "loadPlan": {
-    "mode": "password",
-    "requirements": ["password"]
-  },
-  "profiles": ["compact", "full"],
-  "encrypted": true
+    "state": "ready",
+    "required_action": "load",
+    "can_load_now": true
+  }
 }
 ```
+
+The exact Core 0.20 inspect contract exposes the default profile, not an
+authoritative list of every available projection. A custom runtime may add a
+`profiles` array when it can provide that list.
 
 ---
 
@@ -224,16 +213,22 @@ requires.
 
 ```json
 {
-  "domain": "@author/asset-name",
-  "version": "1.2.0",
+  "domain": "kdna:aikdna:laozi-wuwei",
+  "version": "0.1.1",
+  "judgmentVersion": "0.1.0",
   "profile": "compact",
   "content": {
     "highest_question": "What should guide this task?",
     "axioms": []
   },
   "capsule": {
-    "type": "kdna.context.capsule",
-    "version": "1.0",
+    "type": "kdna.runtime-capsule",
+    "contract_version": "0.1.0",
+    "asset": {
+      "asset_id": "kdna:aikdna:laozi-wuwei",
+      "version": "0.1.1",
+      "judgment_version": "0.1.0"
+    },
     "profile": "compact",
     "context": {
       "highest_question": "What should guide this task?",
@@ -274,13 +269,16 @@ server. Returns the signed entitlement record.
 
 ```json
 {
-  "domain": "@author/asset-name",
-  "license_key": "KDNA-LIC-customer-1",
-  "machine_fingerprint": "..."
+  "domain": "kdna:author:asset-name",
+  "license_key": "<opaque-license-secret>",
+  "machine_fingerprint": "<64-lowercase-hex-sha256>"
 }
 ```
 
-**Response** — the signed entitlement record from the activation server.
+**Response** — the signed public entitlement record from the exact Activation
+0.2 contract. Unknown upstream fields, private credential fields, malformed
+records, redirects, non-JSON bodies, oversized bodies, and stalled responses
+fail closed behind stable local error codes.
 
 For compatibility with React form helpers, the proxy also accepts
 `licenseKey` and `machineFingerprint` and forwards them to the activation
@@ -296,8 +294,11 @@ server as `license_key` and `machine_fingerprint`.
 | `storage` | `object` | file storage | Custom storage adapter with `put`, `get`, `remove`, and `cleanup` methods. |
 | `ttlMs` | `number` | `3600000` | Upload TTL for the default file storage adapter. |
 | `maxFileSizeBytes` | `number` | `10485760` | Maximum accepted file size (10 MB). |
-| `activationServerUrl` | `string` | `undefined` | URL of a `@aikdna/kdna-activation-server` instance. Required to use `/activate`. |
-| `activationPath` | `string` | `/entitlements/activate` | Path used when proxying activation requests. |
+| `maxMultipartBodyBytes` | `number` | file limit + 65536 | Maximum complete multipart request size, enforced while streaming before form parsing. |
+| `maxJsonBodyBytes` | `number` | `65536` | Maximum JSON request-body size, counted as bytes before parsing. |
+| `activationServerUrl` | `string` | `undefined` | HTTPS origin of an `@aikdna/kdna-activation-server` instance. Exact loopback HTTP origins are accepted for local tests. |
+| `activationPath` | `string` | `/entitlements/activate` | Canonical activation route. Alternate routes are rejected. |
+| `activationTimeoutMs` | `number` | `10000` | Total activation fetch and response-body timeout. |
 
 ---
 

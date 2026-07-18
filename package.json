@@ -1,13 +1,12 @@
 {
   "name": "@aikdna/kdna-web-server",
   "version": "0.3.0",
-  "description": "Server-side adapter for the KDNA runtime — route handlers for Next.js, Express, and Cloudflare Workers. All KDNA decryption and license verification runs server-side.",
+  "description": "Node.js server adapter for the KDNA runtime, with route handlers for Next.js and Express. Decryption and license verification remain server-side.",
   "type": "module",
   "exports": {
     ".": "./src/index.js",
     "./nextjs": "./src/adapters/nextjs/index.js",
-    "./express": "./src/adapters/express/index.js",
-    "./cloudflare": "./src/adapters/cloudflare/index.js"
+    "./express": "./src/adapters/express/index.js"
   },
   "files": [
     "src/",
@@ -19,7 +18,9 @@
   ],
   "scripts": {
     "ci": "npm test && npm run lint && npm pack --dry-run --json",
-    "test": "node --test tests/server.test.js tests/release-context.test.cjs",
+    "check:public-surface": "node scripts/check-public-surface.js",
+    "check:protocol-names": "node scripts/check-protocol-names.js",
+    "test": "npm run check:public-surface && npm run check:protocol-names && node --test tests/server.test.js tests/release-context.test.cjs",
     "test:core-compat": "node --test tests/core-compat.test.js",
     "lint": "node scripts/lint.js",
     "prepublishOnly": "npm run ci"
@@ -30,8 +31,8 @@
   "peerDependencies": {
     "@aikdna/kdna-core": "0.20.0"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@aikdna/kdna-activation-server": "0.2.0",
     "@aikdna/kdna-core": "0.20.0"
   },
   "license": "Apache-2.0",
@@ -48,7 +49,6 @@
     "kdna-web-server",
     "nextjs",
     "express",
-    "cloudflare-workers",
     "server-adapter",
     "judgment-asset"
   ]
