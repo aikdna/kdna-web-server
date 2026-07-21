@@ -2,6 +2,10 @@
 
 **Server-side adapter for the KDNA runtime.**
 
+> **Status:** Experimental published server integration at its exact package
+> coordinate. It is not an AIKDNA-hosted service and does not decide which
+> asset a user or Host should attach to a task.
+
 Mount one function call and your Node.js-hosted Next.js or Express app gains
 a KDNA API: validate, inspect, plan-load, load, and
 activation proxying. Studio export is not included in this server MVP yet.
@@ -37,6 +41,10 @@ not part of the verified 0.3.0 surface.
 The load endpoint defaults to Core's JSON Runtime Capsule. The server stores
 the uploaded `.kdna` file but does not decode `payload.kdnab` itself; all
 validation, authorization, decryption, and profile selection stay inside Core.
+
+Upload storage, a file identifier, and a successful LoadPlan are not user
+consent for unrelated future tasks. The consuming application owns attachment
+scope, visible active state, and disable/switch/rollback controls.
 
 Studio export is planned for a later server milestone. The MVP returns
 a structured `501 KDNA_EXPORT_NOT_IMPLEMENTED` response for `/export`.
