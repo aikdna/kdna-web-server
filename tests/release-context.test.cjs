@@ -78,7 +78,7 @@ test('release event and exact dependency graph fail closed', () => {
   assert.doesNotThrow(() => verifyDependencies(PACKAGE_JSON, PACKAGE_LOCK));
   assert.throws(
     () => verifyDependencies(
-      { ...PACKAGE_JSON, peerDependencies: { '@aikdna/kdna-core': '^0.20.0' } },
+      { ...PACKAGE_JSON, peerDependencies: { '@aikdna/kdna-core': '^0.21.0' } },
       PACKAGE_LOCK,
     ),
     /exact @aikdna\/kdna-core/,
