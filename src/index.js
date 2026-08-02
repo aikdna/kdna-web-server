@@ -14,7 +14,7 @@ const MAX_ACTIVATION_RESPONSE_BYTES = 64 * 1024;
 const DEFAULT_ACTIVATION_TIMEOUT_MS = 10_000;
 const MACHINE_FINGERPRINT_RE = /^[0-9a-f]{64}$/;
 const LICENSE_ID_RE = /^[A-Za-z0-9_\-:.]{1,128}$/;
-const CORE_CONFORMANCE_VERSION = '0.20.0';
+const CORE_CONFORMANCE_VERSION = '0.21.0';
 const POST_OPERATIONS = new Set(['validate', 'inspect', 'plan-load', 'load', 'activate', 'export']);
 export const ENTITLEMENT_ACTIVATE_PATH = '/entitlements/activate';
 
