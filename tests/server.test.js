@@ -749,7 +749,7 @@ test('JSON request limits count bytes before parsing', async () => {
 
 test('package peers pin the current KDNA runtime API', () => {
   const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '0.20.0');
+  assert.equal(pkg.peerDependencies['@aikdna/kdna-core'], '0.21.0');
 });
 
 test('default runtime resolves the current KDNA API surface', async () => {

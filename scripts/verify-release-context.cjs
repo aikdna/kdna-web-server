@@ -77,14 +77,14 @@ function verifyReleaseEvent({ action, isDraft, isPrerelease }) {
 
 function verifyDependencies(packageJson, packageLock) {
   assert(
-    packageJson?.peerDependencies?.['@aikdna/kdna-core'] === '0.20.0',
-    'Web Server must bind the exact @aikdna/kdna-core@0.20.0 peer contract',
+    packageJson?.peerDependencies?.['@aikdna/kdna-core'] === '0.21.0',
+    'Web Server must bind the exact @aikdna/kdna-core@0.21.0 peer contract',
   );
   assert(
-    packageJson?.devDependencies?.['@aikdna/kdna-core'] === '0.20.0' &&
-      packageLock?.packages?.['']?.devDependencies?.['@aikdna/kdna-core'] === '0.20.0' &&
-      packageLock?.packages?.['node_modules/@aikdna/kdna-core']?.version === '0.20.0',
-    'development and lock state must resolve exact @aikdna/kdna-core@0.20.0',
+    packageJson?.devDependencies?.['@aikdna/kdna-core'] === '0.21.0' &&
+      packageLock?.packages?.['']?.devDependencies?.['@aikdna/kdna-core'] === '0.21.0' &&
+      packageLock?.packages?.['node_modules/@aikdna/kdna-core']?.version === '0.21.0',
+    'development and lock state must resolve exact @aikdna/kdna-core@0.21.0',
   );
   assert(
     packageJson?.devDependencies?.['@aikdna/kdna-activation-server'] === '0.2.0' &&
