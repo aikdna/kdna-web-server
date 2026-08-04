@@ -3,10 +3,8 @@
 **Server-side adapter for the KDNA runtime.**
 
 > **Status:** Experimental published server integration. The published
-> `0.3.0` binds the exact `@aikdna/kdna-core@0.20.0` runtime; the `0.3.1`
-> source candidate re-anchors the peer contract to
-> `@aikdna/kdna-core@0.21.0` and is not yet on npm `latest`. It is not an
-> AIKDNA-hosted service and does not decide which
+> `0.3.1` (npm `latest`) binds the exact `@aikdna/kdna-core@0.21.0` runtime.
+> It is not an AIKDNA-hosted service and does not decide which
 > asset a user or Host should attach to a task.
 
 Mount one function call and your Node.js-hosted Next.js or Express app gains
@@ -36,9 +34,8 @@ activation proxying. Studio export is not included in this server MVP yet.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-The published `0.3.0` requires the exact `@aikdna/kdna-core@0.20.0` runtime
-contract; the `0.3.1` source candidate requires `@aikdna/kdna-core@0.21.0`.
-Other Core versions are intentionally outside the tested peer
+The published `0.3.1` requires the exact `@aikdna/kdna-core@0.21.0` runtime
+contract. Other Core versions are intentionally outside the tested peer
 range. The package targets Node.js 18 or later; Edge and Worker runtimes are
 not part of the verified surface.
 
@@ -158,7 +155,7 @@ No decryption is performed.
 }
 ```
 
-The exact Core 0.20 inspect contract exposes the default profile, not an
+The exact Core 0.21 inspect contract exposes the default profile, not an
 authoritative list of every available projection. A custom runtime may add a
 `profiles` array when it can provide that list.
 
