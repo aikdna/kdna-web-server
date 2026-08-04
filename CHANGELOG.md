@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 (2026-08-04)
+
+- Re-anchor the adapter peer and development contract to the published
+  `@aikdna/kdna-core@0.21.0` runtime after the 0.21.0 release; the prior
+  0.3.0 package historically bound core 0.20.0.
+- Publish as a patch so downstream consumers (kdna-assets, kdna-react,
+  create-kdna-web-app, kdna-demo-web-viewer) can hold the peer contract at
+  0.21.0 without a major breaking surface.
+
 ## 0.3.0 (2026-07-18)
 
 - Bind the adapter to the exact published `@aikdna/kdna-core@0.20.0` runtime
