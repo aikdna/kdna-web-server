@@ -20,7 +20,7 @@ Node.js runtime.
 npm install @aikdna/kdna-web-server @aikdna/kdna-core
 ```
 
-Use the exact `@aikdna/kdna-core@0.20.0` runtime with Web Server 0.3.0. Other
+Use the exact `@aikdna/kdna-core@0.21.0` runtime with Web Server 0.3.1. Other
 Core versions are outside the adapter's tested compatibility declaration.
 
 Studio export is not included in the server MVP yet.

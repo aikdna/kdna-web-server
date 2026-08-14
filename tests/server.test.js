@@ -446,8 +446,8 @@ test('activation proxy redacts echoed license keys from upstream errors', async 
   }
 });
 
-test('web activation completes against the exact installed Activation 0.2.0 package', async () => {
-  assert.equal(activationPackage.version, '0.2.0');
+test('web activation completes against the exact installed Activation 0.2.1 package', async () => {
+  assert.equal(activationPackage.version, '0.2.1');
   assert.equal(activation.ENTITLEMENT_ROUTES.activate, '/entitlements/activate');
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kdna-web-activation-'));
   const store = activation.makeStore(dataDir);

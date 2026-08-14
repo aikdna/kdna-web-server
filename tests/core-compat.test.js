@@ -29,7 +29,7 @@ function jsonRequest(operation, body) {
   });
 }
 
-test('Core 0.20 validates, inspects, plans, and loads a real public asset', async () => {
+test('Core 0.21 validates, inspects, plans, and loads a real public asset', async () => {
   const assetPath = process.env.KDNA_WEB_CORE_ASSET;
   assert.ok(
     assetPath,

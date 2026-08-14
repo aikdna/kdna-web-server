@@ -32,7 +32,7 @@
     "@aikdna/kdna-core": "0.21.0"
   },
   "devDependencies": {
-    "@aikdna/kdna-activation-server": "0.2.0",
+    "@aikdna/kdna-activation-server": "0.2.1",
     "@aikdna/kdna-core": "0.21.0"
   },
   "license": "Apache-2.0",
