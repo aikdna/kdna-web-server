@@ -40,7 +40,7 @@ jobs:
         run: node scripts/verify-release-context.cjs
       - run: npm test
       - run: npm run lint
-      - name: Exercise the real Core 0.20.0 adapter path
+      - name: Exercise the real Core 0.21.0 adapter path
         env:
           KDNA_WEB_CORE_ASSET: public-assets/references/public/laozi-wuwei/laozi-wuwei-0.1.1.kdna
         run: npm run test:core-compat

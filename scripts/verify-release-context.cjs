@@ -87,10 +87,10 @@ function verifyDependencies(packageJson, packageLock) {
     'development and lock state must resolve exact @aikdna/kdna-core@0.21.0',
   );
   assert(
-    packageJson?.devDependencies?.['@aikdna/kdna-activation-server'] === '0.2.0' &&
-      packageLock?.packages?.['']?.devDependencies?.['@aikdna/kdna-activation-server'] === '0.2.0' &&
-      packageLock?.packages?.['node_modules/@aikdna/kdna-activation-server']?.version === '0.2.0',
-    'integration tests must bind exact @aikdna/kdna-activation-server@0.2.0',
+    packageJson?.devDependencies?.['@aikdna/kdna-activation-server'] === '0.2.1' &&
+      packageLock?.packages?.['']?.devDependencies?.['@aikdna/kdna-activation-server'] === '0.2.1' &&
+      packageLock?.packages?.['node_modules/@aikdna/kdna-activation-server']?.version === '0.2.1',
+    'integration tests must bind exact @aikdna/kdna-activation-server@0.2.1',
   );
 }
 
