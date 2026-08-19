@@ -8,7 +8,7 @@ Node.js runtime.
 
 ## Prerequisites
 
-- Node.js 18 or later
+- Node.js 22 or later
 - An existing Next.js 14+ project or Express app running on Node.js
 - `@aikdna/kdna-core` installed
 
