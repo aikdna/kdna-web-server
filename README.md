@@ -36,7 +36,7 @@ npm install @aikdna/kdna-web-server @aikdna/kdna-core
 
 The published `0.3.1` requires the exact `@aikdna/kdna-core@0.21.0` runtime
 contract. Other Core versions are intentionally outside the tested peer
-range. The package targets Node.js 18 or later; Edge and Worker runtimes are
+range. The package targets Node.js 22 or later (0.3.1 was the last Node 18-compatible release); Edge and Worker runtimes are
 not part of the verified surface.
 
 The load endpoint defaults to Core's JSON Runtime Capsule. The server stores
