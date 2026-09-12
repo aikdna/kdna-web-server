@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import { execFileSync } from 'node:child_process';
+import { sourceFiles } from './source-files.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const textExtensions = new Set(['.js', '.cjs', '.json', '.md', '.yml', '.yaml', '.txt']);
+const textExtensions = new Set(['.js', '.cjs', '.mjs', '.ts', '.mts', '.json', '.md', '.yml', '.yaml', '.txt']);
 const retired = [
   ['retired manifest discriminator', /kdna_version/],
   ['retired judgment profile', /judgment-profile-v1/i],
@@ -21,10 +21,7 @@ function allowedThirdPartyReference(relative, line) {
 }
 
 function trackedFiles() {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root })
-    .toString('utf8')
-    .split('\0')
-    .filter(Boolean);
+  return sourceFiles(root);
 }
 
 for (const relative of trackedFiles()) {

@@ -1,46 +1,14 @@
-# Next.js adapter
+# Next handlers
 
-`@aikdna/kdna-web-server/nextjs` provides App Router route handlers
-and a Pages Router API helper.
+`createNextHandlers` from `@aikdna/kdna-web-server/nextjs` returns Node GET/POST
+handlers for the unchanged public Read multipart surface. Supply independently
+trusted `getContext(request)` and `observePolicy`; default policy denies reading.
 
----
+Next supports the default `retainedSession: false` path only. Enabled retention
+throws Host-local `HOST_RETAINED_DELIVERY_UNSUPPORTED` before a retained instance
+is created. Returning a generic Response cannot confirm the actual Node server
+finish event. Use a long-lived Node/Express embedding with its real finish boundary
+for the [retained profile](../host-retained-session.md).
 
-## App Router (recommended)
-
-### Catch-all route
-
-```js
-// app/api/kdna/[...route]/route.js
-import { createNextHandlers } from '@aikdna/kdna-web-server/nextjs'
-
-const { GET, POST } = createNextHandlers({
-  storageDir: process.env.KDNA_STORAGE_DIR ?? '/tmp/kdna',
-  activationServerUrl: process.env.KDNA_ACTIVATION_URL,
-})
-
-export { GET, POST }
-```
-
-This registers the MVP endpoints under `/api/kdna/`: `health`,
-`validate`, `inspect`, `plan-load`, `load`, `activate`, and the
-structured `/export` 501 response.
-
----
-
-## Environment variables
-
-| Variable | Description |
-|----------|-------------|
-| `KDNA_STORAGE_DIR` | Where uploaded files are stored temporarily |
-| `KDNA_ACTIVATION_URL` | URL of an `@aikdna/kdna-activation-server` instance |
-
----
-
-## Deployment notes
-
-- Edge functions are outside the verified 0.3.1 surface. Configure the route
-  for the Next.js Node.js runtime.
-- Vercel Node.js runtime: set `storageDir` to `/tmp` (ephemeral but
-  available within a single invocation).
-- Self-hosted: any writable path works. Clean up stale files with a
-  cron job or set a short `ttlMs` in the configuration.
+No Edge runtime, storage, activation proxy, action execution or Reader integration
+is established by these handlers.

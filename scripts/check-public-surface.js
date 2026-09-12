@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { sourceFiles } from './source-files.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const textExtensions = new Set(['.js', '.cjs', '.json', '.md', '.yml', '.yaml', '.txt']);
+const textExtensions = new Set(['.js', '.cjs', '.mjs', '.ts', '.mts', '.json', '.md', '.yml', '.yaml', '.txt']);
 const findings = [];
 const forbiddenCredentialPrefixHash =
   '74f0f71d71864ef09245d0dafe6aba03129017f87ae023a18a1c38bb887ad76c';
@@ -22,10 +22,7 @@ function containsForbiddenCredentialPrefix(text) {
 }
 
 function trackedFiles() {
-  return execFileSync('git', ['ls-files', '-z'], { cwd: root })
-    .toString('utf8')
-    .split('\0')
-    .filter(Boolean);
+  return sourceFiles(root);
 }
 
 for (const relative of trackedFiles()) {

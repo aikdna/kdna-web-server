@@ -1,4 +1,21 @@
+## 0.5.0-rc.component-semantics.1
+
+- Bind the reference Host to the current public Core/Read component graph and report its versions and definition in health output.
+- Preserve the existing admission boolean while returning public Core rejection states and component failure details from validate.
+- Exercise current component read, retained expansion, denial and delivery boundaries without changing policy or action authority.
+
 # Changelog
+
+## 0.4.0-rc.host-session.1 (local candidate)
+
+- Rebind exact Core 0.23.0 and Read 0.2.0 artifacts without changing the Read tuple.
+- Add default-off HRSP01 one-instance retention, atomic admitted request-ID
+  consumption, original provider/snapshot reuse and bounded terminal lifecycle.
+- Confirm Node/Express finish plus formal Read success before commit; reject
+  retained Next and stateless helper use explicitly. Add management types/docs.
+- Preserve public Core/Read semantics and the existing HTTP/client surface.
+- This entry does not claim independent acceptance or publication.
+
 
 ## 0.3.1 (2026-08-04)
 

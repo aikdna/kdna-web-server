@@ -36,3 +36,12 @@ those contracts come from `aikdna/kdna` and conforming core/CLI behavior.
 For the KDNA Protocol security architecture, see
 [GOVERNANCE.md](https://github.com/aikdna/kdna/blob/main/docs/GOVERNANCE.md)
 in the main protocol repository.
+
+## Local retained Host candidate
+
+The HRSP01 candidate binds exact Core 0.23.0/Read 0.2.0 artifacts and is not a
+public release. Retention is explicit and default off. The embedding owns fixed
+identity/domain verification and policy; client session IDs grant no authority.
+See [retained sessions](docs/host-retained-session.md) for terminal revocation,
+absolute deadlines, caps, uncooperative callback accounting and proof limits.
+Only formal Read success and actual Node/Express finish can commit.

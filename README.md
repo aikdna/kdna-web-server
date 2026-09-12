@@ -1,357 +1,145 @@
 # @aikdna/kdna-web-server
 
-**Server-side adapter for the KDNA runtime.**
+Reference Host `0.5.0-rc.component-semantics.1` consumes Core `0.24.0-rc.component-semantics.2`
+and Read `0.3.0-rc.component-semantics.2`. The current public Read tuple is `kdna.read/0.2.0`.
+The component definition is `sha256:3087cd19542e72322aec19b3015c916d2cfb074fa42e3fd76b3756bb4f097de3`.
+Exact dependency archive bytes are listed in `docs/current-core-read-binding.json`;
+matching package versions alone do not identify artifact bytes.
 
-> **Status:** Experimental published server integration. The published
-> `0.3.1` (npm `latest`) binds the exact `@aikdna/kdna-core@0.21.0` runtime.
-> It is not an AIKDNA-hosted service and does not decide which
-> asset a user or Host should attach to a task.
+The reference Host delegates container admission, Canonical IR, disclosure,
+mandatory support, handle authority and diagnostics to public Core and Read.
+It supplies the embedding's independent policy and delivery boundary. It does
+not parse payload fields, replicate a Validator or grant permission from an asset.
 
-Mount one function call and your Node.js-hosted Next.js or Express app gains
-a KDNA API: validate, inspect, plan-load, load, and
-activation proxying. Studio export is not included in this server MVP yet.
-
-> **Security invariant:** decryption, license verification, and
-> entitlement checks run exclusively server-side. Passwords and
-> license keys are never reflected to the client.
-
-> New to KDNA? → [KDNA Core](https://github.com/aikdna/kdna)
->
-> Need browser-side file picking and upload? →
-> [@aikdna/kdna-web-client](https://github.com/aikdna/kdna-web-client)
->
-> Need React components? →
-> [@aikdna/kdna-react](https://github.com/aikdna/kdna-react)
-
-[![npm](https://img.shields.io/npm/v/@aikdna/kdna-web-server)](https://www.npmjs.com/package/@aikdna/kdna-web-server)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-
----
-
-## Install
-
-```bash
-npm install @aikdna/kdna-web-server @aikdna/kdna-core
-```
-
-The published `0.3.1` requires the exact `@aikdna/kdna-core@0.21.0` runtime
-contract. Other Core versions are intentionally outside the tested peer
-range. The package targets Node.js 22 or later (0.3.1 was the last Node 18-compatible release); Edge and Worker runtimes are
-not part of the verified surface.
-
-The load endpoint defaults to Core's JSON Runtime Capsule. The server stores
-the uploaded `.kdna` file but does not decode `payload.kdnab` itself; all
-validation, authorization, decryption, and profile selection stay inside Core.
-
-Upload storage, a file identifier, and a successful LoadPlan are not user
-consent for unrelated future tasks. The consuming application owns attachment
-scope, visible active state, and disable/switch/rollback controls.
-
-Studio export is planned for a later server milestone. The MVP returns
-a structured `501 KDNA_EXPORT_NOT_IMPLEMENTED` response for `/export`.
-
----
-
-## Quick start
-
-### Next.js (App Router)
+## Default operation
 
 ```js
-// app/api/kdna/[...route]/route.js
-import { createNextHandlers } from '@aikdna/kdna-web-server/nextjs'
-
-const { GET, POST } = createNextHandlers({
-  storageDir: process.env.KDNA_STORAGE_DIR ?? './kdna-files',
-  activationServerUrl: process.env.KDNA_ACTIVATION_URL,    // optional
-})
-
-export { GET, POST }
+import { createReferenceHost } from '@aikdna/kdna-web-server';
+const host = createReferenceHost({ observePolicy: trustedPolicy });
+const result = await host.read(containerBytes, publicReadRequest, {
+  context: trustedServerContext,
+});
 ```
 
-That single route file registers:
+Retention is off by default. Each default read makes a new Core admission, so a
+handle from an earlier call is stale. Missing policy denies disclosure. A trusted
+`settings.deliver(result)` callback may confirm delivery; without it, default
+operation confirms the in-process return only. Read preserves denial latching;
+only independent policy can request a lift. No execution or action is authorized.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/kdna/validate` | Validate a `.kdna` file |
-| `POST` | `/api/kdna/inspect` | Return manifest and load-plan metadata |
-| `POST` | `/api/kdna/plan-load` | Evaluate the LoadPlan and return requirements |
-| `POST` | `/api/kdna/load` | Authorize and return a JSON Runtime Capsule |
-| `POST` | `/api/kdna/activate` | Proxy an entitlement activation request |
-| `POST` | `/api/kdna/export` | Not implemented in the MVP; returns `501` |
-
-→ [Full Next.js guide](./docs/adapters/nextjs.md)
-
-### Express
+## Explicit retained Host
 
 ```js
-import express from 'express'
-import { createKDNARouter } from '@aikdna/kdna-web-server/express'
-
-const app = express()
-app.use('/api/kdna', createKDNARouter({
-  storageDir: process.env.KDNA_STORAGE_DIR ?? './kdna-files',
-}))
-app.listen(3000)
-```
-
-→ [Full Express guide](./docs/adapters/express.md)
-
-## HTTP API reference
-
-All endpoints accept `multipart/form-data` or `application/json` as
-noted. All responses are `application/json`.
-
-### `POST /validate`
-
-Validate a `.kdna` file. Returns the validation result without loading
-any content.
-
-**Request** (`multipart/form-data`)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `file` | File | The `.kdna` file to validate |
-
-**Response**
-
-```json
-{
-  "valid": true,
-  "domain": "kdna:aikdna:laozi-wuwei",
-  "version": "0.1.1",
-  "warnings": []
-}
-```
-
----
-
-### `POST /inspect`
-
-Return the manifest and LoadPlan metadata from a `.kdna` file.
-No decryption is performed.
-
-**Request** (`multipart/form-data`)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `file` | File | The `.kdna` file to inspect |
-
-**Response**
-
-```json
-{
-  "fileId": "8d1b2ab0-...",
-  "domain": "kdna:aikdna:laozi-wuwei",
-  "version": "0.1.1",
-  "title": "Asset display name",
-  "description": "...",
-  "encrypted": false,
-  "defaultProfile": "compact",
-  "loadPlan": {
-    "state": "ready",
-    "required_action": "load",
-    "can_load_now": true
-  }
-}
-```
-
-The exact Core 0.21 inspect contract exposes the default profile, not an
-authoritative list of every available projection. A custom runtime may add a
-`profiles` array when it can provide that list.
-
----
-
-### `POST /plan-load`
-
-Evaluate the LoadPlan for a `.kdna` file and return what the client
-needs to provide before `/load` will succeed.
-
-**Request** (`application/json`)
-
-```json
-{
-  "fileId": "abc123",
-  "context": {
-    "hasPassword": false,
-    "entitlementToken": null
-  }
-}
-```
-
-**Response**
-
-```json
-{
-  "canProceed": false,
-  "missing": ["enter_password"],
-  "plan": {
-    "state": "needs_password",
-    "required_action": "enter_password",
-    "can_load_now": false
-  }
-}
-```
-
----
-
-### `POST /load`
-
-Authorize and load a `.kdna` file. Returns the selected Runtime Capsule plus
-`content` as a convenience alias for the Capsule context.
-
-> **Security:** `password` and signed entitlement fields travel from
-> the client to this endpoint over HTTPS and are used for the single
-> in-flight authorization/load. They are not logged, stored, or returned.
-> Raw license keys belong on `/activate`, not `/load`.
-
-**Request** (`application/json`)
-
-```json
-{
-  "fileId": "abc123",
-  "profile": "compact",
-  "password": "...",
-  "entitlementToken": { "status": "active" }
-}
-```
-
-All credential fields are optional — provide only what the LoadPlan
-requires.
-
-**Response**
-
-```json
-{
-  "domain": "kdna:aikdna:laozi-wuwei",
-  "version": "0.1.1",
-  "judgmentVersion": "0.1.0",
-  "profile": "compact",
-  "content": {
-    "highest_question": "What should guide this task?",
-    "axioms": []
+import { createKDNARouter } from '@aikdna/kdna-web-server/express';
+const router = createKDNARouter({
+  retainedSession: {
+    binding_id: 'application-binding',
+    authorization_domain_id: 'application-domain',
+    verifyContext: trustedContextVerifier,
   },
-  "capsule": {
-    "type": "kdna.runtime-capsule",
-    "contract_version": "0.1.0",
-    "asset": {
-      "asset_id": "kdna:aikdna:laozi-wuwei",
-      "version": "0.1.1",
-      "judgment_version": "0.1.0"
-    },
-    "profile": "compact",
-    "context": {
-      "highest_question": "What should guide this task?",
-      "axioms": []
-    }
-  }
-}
+  getContext: request => establishedServerContext(request),
+  observePolicy: trustedPolicy,
+});
+// Mount this same long-lived callable instance in the embedding's Node server.
+// At shutdown or trusted revocation:
+router.dispose();
 ```
 
-Wrong decryption credentials return `401 KDNA_DECRYPT_FAILED` with a generic
-message. Cryptographic provider errors and internal paths are never returned.
+The embedding must independently verify the fixed binding and authorization
+domain. Matching strings or caller-held session metadata do not authenticate a
+request. No identity service is included. An unrelated or unverified context is
+rejected without replacing the legitimate binding. Explicit policy revocation,
+epoch change, expiry or disposal closes the instance permanently.
 
----
+One actual same-Core snapshot and the original Read provider survive successful
+calls. The first call uses public `readNode`; later calls compare the complete
+input bytes and use public `readBrowser` with that same snapshot. Read alone
+checks its private handle issuance registry. A valid handle can be used again
+with a fresh admitted request ID. A duplicate admitted ID returns the existing
+Read transport failure (502, null body); it does not create an asset denial.
 
-### `POST /export`
+Retention activates only after the actual Node/Express response `finish` event
+and successful completion of the same formal Read call. A returned Response,
+`end()` invocation or client observation cannot confirm it. The embedding must
+not share one retained instance across independent bindings or assets.
 
-Studio export is not implemented in the server MVP yet.
+See [the complete retained contract](docs/host-retained-session.md) for lifecycle,
+configuration, accounting, direct callbacks and proof limits.
 
-**Response** — `501 application/json`
+## Existing HTTP surface
 
-```json
-{
-  "error": {
-    "code": "KDNA_EXPORT_NOT_IMPLEMENTED",
-    "message": "KDNA export is not included in the server MVP yet."
-  }
-}
-```
+| Operation | Behavior |
+| --- | --- |
+| `GET /api/kdna` | Local capability summary |
+| `POST /api/kdna/validate` | One multipart `file`; Host admission gate plus public Core rejection states |
+| `POST /api/kdna/read` | Multipart `file` and `request` containing unchanged public Read JSON |
+| `POST /api/kdna/inspect` | Same public Read contract; catalog is a Read mode |
+| `/plan`, `/plan-load`, `/load`, `/activate`, `/export`, `/execute` | Existing named 501 capability-unavailable result |
 
----
+There are no retained-session routes, headers, form fields or Web Client APIs.
+Bodies contain the complete canonical Read envelope or admission rejection;
+there is no wrapper or partial truncation. Existing empty-body 413/502 channels
+and their bounded `x-kdna-*` control headers remain unchanged.
 
-### `POST /activate`
+`createKDNAServer(options).handle(request, settings)` supports Node Web Request
+handling. Enabled retention requires trusted `settings.deliverResponse(response)`;
+it must resolve true only at the real server finish boundary. Direct
+`host.read` uses `settings.deliverResponse(readResult)` for the same obligation.
+The optional trusted AbortSignal controls transport lifecycle, never identity.
+`dispose()` is idempotent. `retentionState()` returns frozen summary counters only.
 
-Proxy an entitlement activation request to the configured activation
-server. Returns the signed entitlement record.
+The callable Express adapter forwards both management methods. Next keeps its
+default stateless behavior and rejects enabled retention with
+`HOST_RETAINED_DELIVERY_UNSUPPORTED`. The per-request `handleKDNARequest` helper
+rejects enabled retention with `HOST_RETAINED_INSTANCE_REQUIRED`.
 
-**Request** (`application/json`)
+## Limits and verification
 
-```json
-{
-  "domain": "kdna:author:asset-name",
-  "license_key": "<opaque-license-secret>",
-  "machine_fingerprint": "<64-lowercase-hex-sha256>"
-}
-```
+Default stateless limits remain: input 10 MiB, response 1 MiB, admission control
+4 KiB, multipart 12 MiB, request JSON 64 KiB, 1024 reads and four concurrent reads.
+Timeout defaults remain five seconds and cannot exceed 30 seconds.
+Enabled retention tightens these to the fixed HRSP01 session bounds. Core also
+retains its independent input/resource caps. Timers cannot preempt synchronous
+Core execution, and these accounting limits are not precise heap or process caps.
 
-**Response** — the signed public entitlement record from the exact Activation
-0.2 contract. Unknown upstream fields, private credential fields, malformed
-records, redirects, non-JSON bodies, oversized bodies, and stalled responses
-fail closed behind stable local error codes.
+For an isolated current source copy, the lock uses the eleven exact archives in
+`vendor/`. Use a local npm cache with `npm ci --offline --ignore-scripts
+--omit=optional --no-audit --no-fund`, then `npm test`, `npm run lint`, and
+`npm pack --ignore-scripts --json`. `npm run check:current-graph` verifies the
+current dependency coordinates, archive hashes and component definition.
+The historical HRSP01 source projection checker remains available as
+`npm run check:legacy-hrsp01 -- path/to/public-semantic-source.json` for its
+original pinned source, and does not establish the current graph.
 
-For compatibility with React form helpers, the proxy also accepts
-`licenseKey` and `machineFingerprint` and forwards them to the activation
-server as `license_key` and `machine_fingerprint`.
+Current focused tests use synthetic containers, public Core/Read, actual
+in-process Request/Response handoff and deterministic delivery callbacks.
+They do not open an OS HTTP server or exercise a current Web Client release.
+Historical loopback and Web Client tests are retained for their original graph.
+No browser/native/production deployment is established. Server finish does not
+prove remote receipt or application ACK.
 
----
+Apache-2.0. See [LICENSE](LICENSE).
 
-## Configuration
+## Current component graph
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `storageDir` | `string` | OS temp dir | Directory where uploaded `.kdna` files are stored temporarily by the default Node storage adapter. |
-| `storage` | `object` | file storage | Custom storage adapter with `put`, `get`, `remove`, and `cleanup` methods. |
-| `ttlMs` | `number` | `3600000` | Upload TTL for the default file storage adapter. |
-| `maxFileSizeBytes` | `number` | `10485760` | Maximum accepted file size (10 MB). |
-| `maxMultipartBodyBytes` | `number` | file limit + 65536 | Maximum complete multipart request size, enforced while streaming before form parsing. |
-| `maxJsonBodyBytes` | `number` | `65536` | Maximum JSON request-body size, counted as bytes before parsing. |
-| `activationServerUrl` | `string` | `undefined` | HTTPS origin of an `@aikdna/kdna-activation-server` instance. Exact loopback HTTP origins are accepted for local tests. |
-| `activationPath` | `string` | `/entitlements/activate` | Canonical activation route. Alternate routes are rejected. |
-| `activationTimeoutMs` | `number` | `10000` | Total activation fetch and response-body timeout. |
+`validate().valid` retains its existing meaning: whether public Core admission
+accepted the bytes for this Host. Its accepted result remains exactly
+`{ valid: true, action_authorization: 'not_evaluated' }`. A rejected result keeps
+`valid: false` and `code`, and now also carries Core's unmodified `states`,
+`diagnostics`, and `component_failure`. For example, technically valid content
+whose component interpretation is blocked still has `valid: false`, while
+`states.core` is `valid` and `states.interpretation` is `blocked`. No rejected
+snapshot or component body is disclosed and this result grants no action.
 
----
+Ordinary content, explicit empty components and authored method presence use
+the same current Core and Read graph. Retained session policy, budget, handle
+issuance, revocation and delivery rules remain in force. Read owns component
+interpretation and expansion authority; Host does not reconstruct component
+bodies or reinterpret a missing field as an empty collection.
 
-## Security model
-
-See [docs/security-model.md](./docs/security-model.md) for the
-authoritative description of what runs server-side vs. what the
-browser is allowed to see.
-
-**Short version:**
-
-- The browser never receives encrypted payload bytes or decryption keys.
-- `/load` returns a Runtime Capsule only after the server-side runtime
-  authorizes and loads the asset.
-- Passwords and signed entitlements are single-use on `/load`; license keys
-  travel only to `/activate`. Credentials must use HTTPS and are not returned
-  in responses.
-- `/validate` and `/inspect` operate on public metadata only.
-- `/plan-load` tells the client what is required but reveals no secrets.
-
----
-
-## Related packages
-
-| Package | Role |
-|---------|------|
-| [`@aikdna/kdna-core`](https://github.com/aikdna/kdna) | KDNA format, schemas, and runtime loading contract |
-| [`@aikdna/kdna-studio-core`](https://github.com/aikdna/kdna-studio-core) | Studio authoring kernel; server-side export integration is planned after the MVP |
-| [`@aikdna/kdna-activation-server`](https://github.com/aikdna/kdna-activation-server) | Self-hosted license activation server |
-| [`@aikdna/kdna-remote-server`](https://github.com/aikdna/kdna-remote-server) | Self-hosted remote projection server |
-| [`@aikdna/kdna-web-client`](https://github.com/aikdna/kdna-web-client) | Browser-side file picking, upload, and load-plan state |
-| [`@aikdna/kdna-react`](https://github.com/aikdna/kdna-react) | React components and hooks |
-| [`create-kdna-web-app`](https://github.com/aikdna/create-kdna-web-app) | Project scaffolding CLI |
-
----
-
-
-## Official packages
-
-Official KDNA packages are published under the `@aikdna` npm scope and the
-`aikdna` name on PyPI. The unscoped npm package `kdna` is not affiliated with
-the KDNA project. Install only from the official coordinates shown in this
-README.
-
-## License
-
-Apache 2.0 — see [LICENSE](./LICENSE).
+`npm test` runs the current graph checks and focused Host component/service
+tests. Historical tests and audit files remain for their original pinned graph;
+`test:legacy-graph` and `check:legacy-hrsp01` are not current-graph acceptance.
+The legacy web-client is not installed into this Host's current graph. Its
+cross-network integration requires the corresponding current client release.
+In-process Response handoff and server-side stream finish are not remote ACKs.

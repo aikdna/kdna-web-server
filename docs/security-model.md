@@ -1,111 +1,18 @@
-# Security model
+# Reference Host security boundaries
 
-This document defines what `@aikdna/kdna-web-server` does on the
-server, what it sends to the client, and what constraints can never
-be relaxed.
+Public Core admits the container and owns semantic validity and IR. Public Read
+owns request admission, selection, support closure, disclosure, byte budgeting,
+handle issuance and diagnostics. The embedding independently supplies identity,
+current policy, exact authorized scope and a truthful delivery callback.
 
----
+The fixed retained binding cannot come from form data, headers, transport
+association metadata or caller-held session IDs. No Validator, raw-field parser,
+activation proxy, identity service or action authorization is added to Host.
+Trusted policy revocation, epoch change, clock fault, expiry and disposal terminate
+retention. Foreign context rejects without rebinding. Request replay protection
+is limited to admitted IDs reaching this one original provider and Host lifetime.
 
-## Trust boundary
-
-```
-Browser                         Server (this package)
-──────                          ──────────────────────
-File bytes        ──upload──▶   Temporary storage
-File metadata     ◀─inspect──   Inspect (no decrypt)
-Load-plan state   ◀─plan-load── Evaluate requirements
-Password (HTTPS)  ──load──────▶ Authorize → decrypt → format content
-License key       ──activate──▶ Proxy to activation server
-                  ◀─────────── Signed entitlement record
-```
-
-The line between browser and server is not a performance choice or a
-configuration option. It is a security requirement.
-
----
-
-## What the browser is allowed to receive
-
-| Data | Allowed | Reason |
-|------|---------|--------|
-| Domain, version, title, description | Yes | Public manifest fields |
-| LoadPlan requirements (what is needed) | Yes | Drives UI state |
-| Runtime Capsule context (after load) | Yes | The purpose of `/load` |
-| Encrypted payload bytes | No | Decryption must be server-side |
-| Decryption keys or derived key material | Never | Would defeat encryption |
-| Passwords or license keys (echoed back) | Never | Single-use credentials |
-| Entitlement tokens (signed by activation server) | Yes | Client needs to present these |
-
----
-
-## Credential handling
-
-Passwords sent to `/load`, license keys sent to `/activate`, and signed
-entitlements sent to `/load` are:
-
-1. Accepted over HTTPS only (enforce TLS in production).
-2. Scoped to the current request.
-3. Never written to disk, logs, or response bodies.
-
-Wrong credentials receive a generic `KDNA_DECRYPT_FAILED` response. Provider
-error bodies, cryptographic implementation details, and internal paths are not
-part of the public HTTP error contract.
-
-Multipart uploads and JSON bodies are byte-bounded before parsing. Activation
-requests use the canonical entitlement route, refuse redirects, accept HTTPS
-origins (plus exact loopback HTTP for local development), and keep a timeout
-active until the bounded JSON response body has been consumed. Successful
-responses with unknown or private fields fail closed.
-
-There is no session storage of credentials. Each `/load` call requires
-the password or signed entitlement to be supplied again.
-
----
-
-## File storage
-
-Uploaded `.kdna` files are stored in `storageDir` for the duration of
-the request or a configurable TTL. Files are:
-
-- Identified by a server-generated ID, not the original filename.
-- Validated when `/validate` is called. `inspect`, `plan-load`, and
-  `load` delegate format checks to the configured KDNA runtime.
-- Not accessible by URL — only via the `/inspect`, `/plan-load`, and
-  `/load` endpoints with the correct `fileId`.
-- Automatically cleaned up after TTL expiry (default: 1 hour).
-
-Do not set `storageDir` to a path served by a static file server.
-
----
-
-## HTTPS requirement
-
-All credential fields (`password`, `license_key` / `licenseKey`,
-`entitlementToken`)
-must travel over HTTPS. If you deploy behind a reverse proxy (nginx,
-Cloudflare, etc.), ensure TLS is terminated at or before your
-application boundary, not after.
-
-Local development over HTTP is acceptable. Production deployments
-over plain HTTP are not.
-
----
-
-## What this package does not enforce
-
-These are left to the application layer:
-
-- **Authentication** — which users may upload files or call `/load`.
-  Wrap the router in your own auth middleware.
-- **Authorization** — which users may load which assets. Check the
-  asset `domain` against your user's entitlements before forwarding
-  to `/load`.
-- **Rate limiting** — apply at your load balancer or middleware layer.
-- **Audit logging** — log which user loaded which asset and when. This
-  package does not log credential usage.
-
----
-
-## Reporting vulnerabilities
-
-See [SECURITY.md](../SECURITY.md).
+See [retained sessions](host-retained-session.md) for caps, noncooperative callback
+accounting, delivery checks and disposal. Server finish is not remote receipt or
+application acknowledgement. The Host cannot retract already transmitted bytes
+or force collection of references held by external callbacks.
