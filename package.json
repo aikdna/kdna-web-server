@@ -1,39 +1,77 @@
 {
   "name": "@aikdna/kdna-web-server",
-  "version": "0.3.1",
-  "description": "Node.js server adapter for the KDNA runtime, with route handlers for Next.js and Express. Decryption and license verification remain server-side.",
+  "version": "0.5.0-rc.component-semantics.1",
+  "description": "Server-side reference Host for exact public KDNA Core and Read release candidates.",
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
-    "./nextjs": "./src/adapters/nextjs/index.js",
-    "./express": "./src/adapters/express/index.js"
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./express": {
+      "types": "./src/adapters/express/index.d.ts",
+      "import": "./src/adapters/express/index.js",
+      "default": "./src/adapters/express/index.js"
+    },
+    "./nextjs": {
+      "types": "./src/adapters/nextjs/index.d.ts",
+      "import": "./src/adapters/nextjs/index.js",
+      "default": "./src/adapters/nextjs/index.js"
+    }
   },
   "files": [
-    "src/",
-    "docs/",
+    "src/adapters/express/index.d.ts",
+    "src/adapters/express/index.js",
+    "src/adapters/nextjs/index.d.ts",
+    "src/adapters/nextjs/index.js",
+    "src/current-core.js",
+    "src/index.d.ts",
+    "src/index.js",
+    "src/profile.js",
+    "src/retained.js",
+    "src/runtime.js",
     "LICENSE",
     "NOTICE",
     "README.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "docs/host-retained-session.md",
+    "docs/current-core-read-binding.json"
   ],
   "scripts": {
     "ci": "npm test && npm run lint && npm pack --dry-run --json",
     "check:public-surface": "node scripts/check-public-surface.js",
     "check:protocol-names": "node scripts/check-protocol-names.js",
-    "test": "npm run check:public-surface && npm run check:protocol-names && node --test tests/server.test.js tests/release-context.test.cjs",
+    "test": "npm run check:public-surface && npm run check:protocol-names && npm run check:current-graph && node --unhandled-rejections=strict --test --test-timeout=20000 tests/components/current-host.test.mjs",
     "test:core-compat": "node --test tests/core-compat.test.js",
     "lint": "node scripts/lint.js",
-    "prepublishOnly": "npm run ci"
+    "prepublishOnly": "npm run ci",
+    "benchmark": "node tests/benchmark.js",
+    "test:hrsp01": "node --unhandled-rejections=strict --test --test-timeout=20000 tests/hrsp01.test.mjs",
+    "check:hrsp01": "node scripts/check-current-graph.mjs",
+    "test:legacy-graph": "npm run check:public-surface && npm run check:protocol-names && node --unhandled-rejections=strict --test --test-timeout=20000 tests/server.test.js tests/core-compat.test.js tests/pd275.test.js tests/hrsp01.test.mjs tests/hrsp01-terminal-close.test.mjs",
+    "check:current-graph": "node scripts/check-current-graph.mjs",
+    "check:legacy-hrsp01": "node scripts/check-hrsp01.mjs"
   },
   "engines": {
     "node": ">=22"
   },
   "peerDependencies": {
-    "@aikdna/kdna-core": "0.21.0"
+    "@aikdna/kdna-core": "0.24.0-rc.component-semantics.2",
+    "@aikdna/kdna-read": "0.3.0-rc.component-semantics.2"
   },
   "devDependencies": {
-    "@aikdna/kdna-activation-server": "0.2.1",
-    "@aikdna/kdna-core": "0.21.0"
+    "@aikdna/kdna-core": "file:vendor/aikdna-kdna-core-0.24.0-rc.component-semantics.2.tgz",
+    "@aikdna/kdna-read": "file:vendor/aikdna-kdna-read-0.3.0-rc.component-semantics.2.tgz",
+    "ajv": "file:vendor/ajv-8.20.0.tgz",
+    "ajv-formats": "file:vendor/ajv-formats-3.0.1.tgz",
+    "cbor-x": "file:vendor/cbor-x-1.6.5.tgz",
+    "fast-deep-equal": "file:vendor/fast-deep-equal-3.1.3.tgz",
+    "fast-uri": "file:vendor/fast-uri-3.1.7.tgz",
+    "json-schema-traverse": "file:vendor/json-schema-traverse-1.0.0.tgz",
+    "@noble/hashes": "file:vendor/noble-hashes-1.8.0.tgz",
+    "pako": "file:vendor/pako-2.1.0.tgz",
+    "require-from-string": "file:vendor/require-from-string-2.0.2.tgz"
   },
   "license": "Apache-2.0",
   "repository": {
@@ -51,5 +89,6 @@
     "express",
     "server-adapter",
     "judgment-asset"
-  ]
+  ],
+  "types": "./src/index.d.ts"
 }

@@ -1,50 +1,15 @@
-# Express adapter
+# Express / Node
 
-`@aikdna/kdna-web-server/express` provides a pre-built Express router
-you can mount at any path.
+`createKDNARouter` from `@aikdna/kdna-web-server/express` returns callable Node
+middleware and starts no network listener. The embedding mounts that instance
+and supplies independently trusted `getContext(req)` and `observePolicy`.
 
----
+Retention defaults off. When explicitly enabled, keep one instance for one fixed
+binding and one input asset. Trusted context resolution and policy callbacks are
+bounded; only real response `finish` plus formal Read success commits retention.
+Close/error/abort/timeout cannot commit. `end()` alone is insufficient.
+`deliveryTimeoutMs` defaults to 5000 and is bounded at 30000.
 
-## Minimal setup
-
-```js
-import express from 'express'
-import { createKDNARouter } from '@aikdna/kdna-web-server/express'
-
-const app = express()
-
-app.use('/api/kdna', createKDNARouter({
-  storageDir: process.env.KDNA_STORAGE_DIR ?? '/tmp/kdna',
-  activationServerUrl: process.env.KDNA_ACTIVATION_URL,
-}))
-
-app.listen(3000, () => console.log('Listening on :3000'))
-```
-
----
-
-## With authentication middleware
-
-Mount your auth middleware before the KDNA router:
-
-```js
-import { requireAuth } from './middleware/auth.js'
-
-app.use('/api/kdna', requireAuth, createKDNARouter({ storageDir: '/tmp/kdna' }))
-```
-
-The KDNA router does not handle authentication. Apply it at the
-application layer.
-
----
-
-## Deployment notes
-
-- Set `storageDir` to a path that is **not** served as a static
-  directory by Express or any reverse proxy.
-- In a multi-process setup, `storageDir` must be on a shared
-  filesystem if you want file IDs to resolve across processes.
-  Alternatively, use a sticky session or a shared object storage
-  adapter (see [configuration options](../../README.md#configuration)).
-- This package is ESM-first. Use `import` syntax or load it from
-  CommonJS with dynamic `import()`.
+The callable forwards `dispose()` and `retentionState()`. Dispose it at shutdown
+or trusted bound revocation. See the [retained contract](../host-retained-session.md)
+and [HTTP surface](../../README.md). Server finish does not prove client ACK.
