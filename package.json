@@ -70,7 +70,7 @@
     "fast-uri": "file:vendor/fast-uri-3.1.7.tgz",
     "json-schema-traverse": "file:vendor/json-schema-traverse-1.0.0.tgz",
     "@noble/hashes": "file:vendor/noble-hashes-1.8.0.tgz",
-    "pako": "file:vendor/pako-2.1.0.tgz",
+    "pako": "2.1.0",
     "require-from-string": "file:vendor/require-from-string-2.0.2.tgz"
   },
   "license": "Apache-2.0",
