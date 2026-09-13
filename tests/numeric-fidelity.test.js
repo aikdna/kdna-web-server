@@ -48,7 +48,7 @@ function numberFixture(token, mutate = () => {}, manifestChange = () => {}, extr
   payload.judgments[0].result.value = { kind: 'number', value: token };
   mutate(payload);
   const manifest = { format_version: '0.2.0', asset_id: payload.asset.asset_id, asset_uid: 'asset:numeric-test',
-    asset_type: 'fixture', title: 'PD275 Host numeric fixture', version: '1.0.0', judgment_version: '1.0.0',
+    asset_type: 'fixture', title: 'Host numeric fixture', version: '1.0.0', judgment_version: '1.0.0',
     created_at: '2026-09-07T00:00:00Z', updated_at: '2026-09-07T00:00:00Z',
     compatibility: { min_loader_version: '0.23.0', profile: 'kdna.payload.judgment', profile_version: '0.2.0' },
     payload: { path: 'payload.kdnab', encoding: 'cbor', encrypted: false },
@@ -86,11 +86,11 @@ function record(value) {
   observations.push(value);
   if (process.env.KDNA_HOST_EVIDENCE) {
     fs.mkdirSync(process.env.KDNA_HOST_EVIDENCE, { recursive: true });
-    fs.writeFileSync(path.join(process.env.KDNA_HOST_EVIDENCE, 'pd275.json'), JSON.stringify(observations, null, 2));
+    fs.writeFileSync(path.join(process.env.KDNA_HOST_EVIDENCE, 'numeric-fidelity.json'), JSON.stringify(observations, null, 2));
   }
 }
 
-test('PD275 uint64 4294967296 and exact larger integers equal float IR with distinct correct A/C/E', async () => {
+test('uint64 4294967296 and exact larger integers equal float IR with distinct correct A/C/E', async () => {
   const values = [4294967296n, -4294967296n, 9007199254740991n, -9007199254740991n,
     9007199254740992n, -9007199254740992n, 9007199254740994n, -9007199254740994n,
     9223372036854775808n, -9223372036854775808n, 18446744073709549568n, -18446744073709551616n];
@@ -120,7 +120,7 @@ test('PD275 uint64 4294967296 and exact larger integers equal float IR with dist
   }
 });
 
-test('PD275 inexact integer tokens reject before Host and are never silently rounded', async () => {
+test('inexact integer tokens reject before Host and are never silently rounded', async () => {
   for (const value of [9007199254740993n, -9007199254740993n, -9007199254740995n,
     18446744073709551615n, -18446744073709551615n]) {
     let called = 0;

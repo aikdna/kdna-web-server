@@ -49,7 +49,7 @@
     "benchmark": "node tests/benchmark.js",
     "test:hrsp01": "node --unhandled-rejections=strict --test --test-timeout=20000 tests/hrsp01.test.mjs",
     "check:hrsp01": "node scripts/check-current-graph.mjs",
-    "test:legacy-graph": "npm run check:public-surface && npm run check:protocol-names && node --unhandled-rejections=strict --test --test-timeout=20000 tests/server.test.js tests/core-compat.test.js tests/pd275.test.js tests/hrsp01.test.mjs tests/hrsp01-terminal-close.test.mjs",
+    "test:legacy-graph": "npm run check:public-surface && npm run check:protocol-names && node --unhandled-rejections=strict --test --test-timeout=20000 tests/server.test.js tests/core-compat.test.js tests/numeric-fidelity.test.js tests/hrsp01.test.mjs tests/hrsp01-terminal-close.test.mjs",
     "check:current-graph": "node scripts/check-current-graph.mjs",
     "check:legacy-hrsp01": "node scripts/check-hrsp01.mjs"
   },
