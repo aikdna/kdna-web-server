@@ -78,7 +78,7 @@ test('input capture owns bytes and no old Core runtime or private Schema is expo
   assert.equal((await pending).envelope.status, 'ready');
   assert.equal((await admitNode(bytes)).status, 'rejected');
   const require = createRequire(import.meta.url);
-  assert.equal(require('@aikdna/kdna-core/package.json').version, '0.23.0');
+  assert.equal(require('@aikdna/kdna-core/package.json').version, '0.24.0-rc.component-semantics.2');
   for (const subpath of ['schema/manifest.schema.json', 'src/public-contract/brand.js']) {
     assert.throws(() => require(`@aikdna/kdna-core/${subpath}`), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
   }
