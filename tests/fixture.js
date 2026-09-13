@@ -1,9 +1,9 @@
 // Synthetic container writer used only by tests. Runtime parsing belongs to Core.
 import { encode } from 'cbor-x';
 export const tuple = Object.freeze({ container: '0.2.0', payload_profile: 'kdna.payload.judgment',
-  payload_version: '0.2.0', core: 'kdna.core/0.2.0', ir: 'kdna.canonical-ir/0.1.0',
+  payload_version: '0.2.0', core: 'kdna.core/0.3.0', ir: 'kdna.canonical-ir/0.2.0',
   runtime: 'kdna.runtime-capsule/0.2.0', plan: 'kdna.consumption-plan/0.2.0',
-  host: 'kdna.agent-host/0.2.0', trace: 'kdna.judgment-trace/0.2.0', read: 'kdna.read/0.1.0' });
+  host: 'kdna.agent-host/0.2.0', trace: 'kdna.judgment-trace/0.2.0', read: 'kdna.read/0.2.0' });
 export const asset = Object.freeze({ asset_id: 'asset:reference-host', asset_version: '1.0.0', judgment_version: '1.0.0' });
 export function readRequest(overrides = {}) {
   return { request_id: 'request:reference', tuple, budget_bytes: 1000000, mode: 'exact_selection',
