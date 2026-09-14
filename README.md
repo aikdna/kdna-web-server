@@ -102,8 +102,10 @@ Enabled retention tightens these to the fixed HRSP01 session bounds. Core also
 retains its independent input/resource caps. Timers cannot preempt synchronous
 Core execution, and these accounting limits are not precise heap or process caps.
 
-For an isolated current source copy, the lock uses the eleven exact archives in
-`vendor/`. Use a local npm cache with `npm ci --offline --ignore-scripts
+For an isolated current source copy, the lock uses ten exact local archives in
+`vendor/` and the integrity-locked `pako` 2.1.0 tarball at its canonical npm
+registry coordinate. A first install with an empty cache needs registry access
+for that tarball. Use a local npm cache with `npm ci --ignore-scripts
 --omit=optional --no-audit --no-fund`, then `npm test`, `npm run lint`, and
 `npm pack --ignore-scripts --json`. `npm run check:current-graph` verifies the
 current dependency coordinates, archive hashes and component definition.

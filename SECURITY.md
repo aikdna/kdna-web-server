@@ -29,18 +29,22 @@ case-by-case basis.
 
 ## Security Model
 
-`kdna-web-server` adapts KDNA APIs for server-side web runtimes. It must not
-define protocol validity, access modes, LoadPlan states, or crypto policy;
-those contracts come from `aikdna/kdna` and conforming core/CLI behavior.
+`kdna-web-server` adapts public Core and Read APIs for server-side web runtimes.
+Core and Read own container admission, component interpretation, disclosure,
+handle authority and diagnostics. The Host supplies the embedding's independent
+policy and delivery boundary; asset content does not authorize an action.
 
 For the KDNA Protocol security architecture, see
 [GOVERNANCE.md](https://github.com/aikdna/kdna/blob/main/docs/GOVERNANCE.md)
 in the main protocol repository.
 
-## Local retained Host candidate
+## Retained Host candidate
 
-The HRSP01 candidate binds exact Core 0.23.0/Read 0.2.0 artifacts and is not a
-public release. Retention is explicit and default off. The embedding owns fixed
+The current Host `0.5.0-rc.component-semantics.1` binds Core
+`0.24.0-rc.component-semantics.2` and Read `0.3.0-rc.component-semantics.2`.
+Exact artifact digests are recorded in `docs/current-core-read-binding.json`;
+this source candidate does not establish a package release or deployment.
+Retention is explicit and default off. The embedding owns fixed
 identity/domain verification and policy; client session IDs grant no authority.
 See [retained sessions](docs/host-retained-session.md) for terminal revocation,
 absolute deadlines, caps, uncooperative callback accounting and proof limits.
