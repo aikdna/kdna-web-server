@@ -53,14 +53,17 @@ When adding a new framework adapter:
 
 Contributions that violate the following will be rejected:
 
-- Decryption, license verification, and entitlement checks **must** remain
-  server-side. Do not move these operations to a browser-accessible code
-  path.
+- Identity/context verification and current policy observations **must** come
+  from the trusted embedding. Never infer them from browser fields or asset text.
+  Current decryption, activation and legacy loading capabilities are unavailable;
+  their historical contracts must not be silently restored here.
 - Passwords, license keys, and entitlement tokens **must never** be
   reflected back to the client in any response body or header.
-- The server **must** validate that a KDNA file passes `kdna validate`
-  before proceeding with any load or export operation.
-- LoadPlan requirements **must** be enforced before returning a decrypted
-  payload.
+- Delegate captured-byte admission to the bound public Core and request,
+  scope, budget and disclosure checks to public Read. Do not add a second
+  validator or raw-payload parser.
+- Missing policy denies disclosure. Preserve the exact current Host lifecycle,
+  denial latch, retained binding and actual delivery checks. A server finish
+  does not prove remote receipt, identity or permission to act.
 
 These rules are part of the security model, not implementation details.
